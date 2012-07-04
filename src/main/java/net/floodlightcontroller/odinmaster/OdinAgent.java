@@ -36,6 +36,8 @@ public class OdinAgent implements IOdinAgent {
 	private static final String ODIN_AGENT_ELEMENT = "odinagent";
 	
 	private final int RX_STAT_NUM_PROPERTIES = 5;
+	private final int ODIN_AGENT_PORT = 6777;
+
 	
 	
 	/**
@@ -172,9 +174,9 @@ public class OdinAgent implements IOdinAgent {
 	 * @param port Click based OdinAgent's control socket port
 	 * @return 0 on success, -1 otherwise
 	 */
-	public int init (InetAddress host, int port) {
+	public int init (InetAddress host) {
 		try {
-			odinAgentSocket = new Socket(host.getHostAddress(), port);
+			odinAgentSocket = new Socket(host.getHostAddress(), ODIN_AGENT_PORT);
 			outBuf = new PrintWriter(odinAgentSocket.getOutputStream(), true);
 			inBuf = new BufferedReader(new InputStreamReader(odinAgentSocket.getInputStream()));
 			ipAddress = host;
@@ -237,7 +239,11 @@ public class OdinAgent implements IOdinAgent {
 	}
 	
 
-	@Override
+	/**
+	 * Set subscriptions
+	 * @param subscriptions 
+	 * @param t timestamp to update lastHeard value
+	 */
 	public void setSubscriptions(String subscriptionList) {
 		invokeWriteHandler(WRITE_HANDLER_SUBSCRIPTIONS, subscriptionList);
 	}

@@ -51,10 +51,9 @@ public interface IOdinAgent {
 	 * in a mock agent implementation
 	 * 
 	 * @param host Click based OdinAgent host
-	 * @param port Click based OdinAgent's control socket port
 	 * @return 0 on success, -1 otherwise
 	 */
-	public int init (InetAddress host, int port);
+	public int init (InetAddress host);
 	
 	
 	/**
