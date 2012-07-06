@@ -18,6 +18,8 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.test.MockFloodlightProvider;
 import net.floodlightcontroller.odinmaster.AgentManager;
 import net.floodlightcontroller.odinmaster.ClientManager;
+import net.floodlightcontroller.odinmaster.ILvapManager;
+import net.floodlightcontroller.odinmaster.LvapManagerImpl;
 import net.floodlightcontroller.odinmaster.OdinAgentFactory;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.odinmaster.OdinMaster;
@@ -38,6 +40,7 @@ public class OdinTest {
     protected OdinMaster odinMaster;
     protected AgentManager agentManager;
     protected ClientManager clientManager;
+    protected ILvapManager lvapManager;
     protected StaticFlowEntryPusher staticFlowEntryPusher;
     protected long switchId = 1L;
     
@@ -91,7 +94,8 @@ public class OdinTest {
         
         agentManager = new AgentManager();
         clientManager = new ClientManager();
-        odinMaster = new OdinMaster();
+        lvapManager = new LvapManagerImpl();
+        odinMaster = new OdinMaster(agentManager, clientManager, lvapManager);
         
         cntx.addService(IFloodlightProviderService.class, mockFloodlightProvider);
         cntx.addService(IRestApiService.class, restApi);
