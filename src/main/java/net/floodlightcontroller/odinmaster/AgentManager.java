@@ -15,6 +15,7 @@ import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinAgentFactory;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.odinmaster.OdinMaster;
+import net.floodlightcontroller.util.MACAddress;
 
 
 public class AgentManager {
@@ -31,6 +32,37 @@ public class AgentManager {
     }
     
     /**
+	 * Confirm if the agent corresponding to an InetAddress
+	 * is being tracked.
+	 * 
+	 * @param odinAgentInetAddress
+	 * @return true if the agent is being tracked
+	 */
+	public boolean isTracked(InetAddress odinAgentInetAddress) {
+		return agentMap.containsKey(odinAgentInetAddress);
+	}
+
+	
+	/**
+	 * set the client manager
+	 * @param clientManager
+	 */
+	public void setClientManager(ClientManager clientManager) {
+		this.clientManager = clientManager;
+	}
+	
+	
+	/**
+	 * Get the list of agents being tracked
+	 * @return agentMap
+	 */
+	public ConcurrentHashMap<InetAddress, IOdinAgent> getOdinAgents() {
+		return agentMap;
+	}
+	
+	// Handle protocol messages here
+	
+	/**
      * Handle a ping from an agent. If an agent was added to the
      * agent map, return true.
      * 
@@ -106,25 +138,6 @@ public class AgentManager {
 	}
 	
 	
-	/**
-	 * Confirm if the agent corresponding to an InetAddress
-	 * is being tracked.
-	 * 
-	 * @param odinAgentInetAddress
-	 * @return true if the agent is being tracked
-	 */
-	public boolean isTracked(InetAddress odinAgentInetAddress) {
-		return agentMap.containsKey(odinAgentInetAddress);
-	}
-
-	/**
-	 * set the client manager
-	 * @param clientManager
-	 */
-	public void setClientManager(ClientManager clientManager) {
-		this.clientManager = clientManager;
-	}
-	
 	private class OdinAgentFailureDetectorTask extends TimerTask {
 		private IOdinAgent agent;
 		
@@ -156,4 +169,5 @@ public class AgentManager {
 		}
 		
 	}
+
 }

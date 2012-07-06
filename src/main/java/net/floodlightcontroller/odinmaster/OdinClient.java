@@ -24,6 +24,7 @@ public class OdinClient implements Comparable {
 		this.odinAgent = null;
 	}
 	
+	
 	/**
 	 * Get the OdinAgent that this client is
 	 * currently assigned to. If null, implies
@@ -36,6 +37,7 @@ public class OdinClient implements Comparable {
 		return odinAgent;
 	}
 	
+	
 	/**
 	 * Set OdinAgent property for the client. Should not be
 	 * null if the client is assigned to an agent.
@@ -45,6 +47,7 @@ public class OdinClient implements Comparable {
 	public void setOdinAgent (IOdinAgent newAgent) {
 		odinAgent = newAgent;
 	}
+	
 	
 	/**
 	 * STA's MAC address. We assume one per client here.
@@ -56,6 +59,7 @@ public class OdinClient implements Comparable {
 		return this.hwAddress;
 	}
 	
+	
 	/**
 	 * Set the client's MAC address.
 	 * 
@@ -65,6 +69,7 @@ public class OdinClient implements Comparable {
 		this.hwAddress = addr;
 	}
 	
+	
 	/**
 	 * Get the clien'ts IP address.
 	 * @return
@@ -73,6 +78,7 @@ public class OdinClient implements Comparable {
 		return ipAddress;
 	}
 	
+	
 	/**
 	 * Set the client's IP address
 	 * @param addr
@@ -80,6 +86,7 @@ public class OdinClient implements Comparable {
 	public void setIpAddress(InetAddress addr) {
 		this.ipAddress = addr;
 	}
+	
 	
 	/**
 	 * Get the LVAP-BSSID for this client
@@ -90,6 +97,7 @@ public class OdinClient implements Comparable {
 		return this.lvapBssid;
 	}
 	
+	
 	/**
 	 * Set the LVAP-BSSID for the client
 	 * @param addr MACAddress representing LVAP-BSSID
@@ -97,6 +105,7 @@ public class OdinClient implements Comparable {
 	public void setLvapBssid(MACAddress addr) {
 		this.lvapBssid = addr;
 	}
+	
 	
 	/**
 	 * Get the LVAP-SSID for the client
@@ -106,6 +115,7 @@ public class OdinClient implements Comparable {
 		return this.lvapEssid;
 	}
 	
+	
 	/**
 	 * Set the LVAP-SSID for the client
 	 * @param ssid
@@ -113,6 +123,7 @@ public class OdinClient implements Comparable {
 	public void setLvapSsid(String ssid) {
 		this.lvapEssid = ssid;
 	}
+	
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -127,6 +138,7 @@ public class OdinClient implements Comparable {
 				&& this.lvapEssid.equals(that.lvapEssid));
 	}
 
+	
 	@Override
 	public int compareTo(Object o) {
 		assert (o instanceof OdinClient);
