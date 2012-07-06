@@ -168,7 +168,7 @@ public class AgentManager {
 					oc.setOdinAgent(null);
 				}
 				
-				// Client should now be flushed out
+				// Agent should now be cleared out
 				agentMap.remove(agent.getIpAddress());
 				this.cancel();
 			}

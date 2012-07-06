@@ -16,7 +16,7 @@ public class OdinClient implements Comparable {
 	// So make sure to pass OdinClient through interfaces of other classes
 	// as opposed to the 4-LVAP properties now. 
 	
-	OdinClient (MACAddress hwAddress, InetAddress ipAddress, MACAddress vapBssid, String vapEssid) {
+	public OdinClient (MACAddress hwAddress, InetAddress ipAddress, MACAddress vapBssid, String vapEssid) {
 		this.hwAddress = hwAddress;
 		this.ipAddress = ipAddress;
 		this.lvapBssid = vapBssid;

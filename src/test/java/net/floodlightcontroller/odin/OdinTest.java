@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
@@ -220,11 +221,9 @@ public class OdinTest {
     	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
     	
-    	// 3. now try again. Client should be authorised
+    	// 3, 4. now try again. Client should be assigned an AP
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	assertEquals(clientManager.getClients().size(), 1);
-    	
-    	// 4. client should have been handed off as well
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// 5. another probe from the same AP/client should
@@ -245,7 +244,7 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr2);
     	assertEquals(clientManager.getClients().size(), 2);
     	
-    	// 8. Authorise client2
+    	// 8. Add client2
     	clientManager.addClient(clientMacAddr2, InetAddress.getByName("172.17.2.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
     	assertEquals(clientManager.getClients().size(), 2);
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent(), null);
@@ -265,7 +264,7 @@ public class OdinTest {
     	assertNull(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress3)));
     	assertEquals(clientManager.getClients().size(), 2);
     	
-    	// 11. Authorise client3
+    	// 11. Add client3
     	clientManager.addClient(clientMacAddr3, InetAddress.getByName("172.17.2.53"), MACAddress.valueOf("00:00:00:00:11:13"), "odin");
     	assertEquals(clientManager.getClients().size(), 3);
     	assertEquals(clientManager.getClients().get(clientMacAddr3).getOdinAgent(), null);
@@ -397,13 +396,13 @@ public class OdinTest {
     @Test
     public void testAgentLeave() throws Exception {
     	String ipAddress1 = "172.17.2.161";
+    	String ipAddress2 = "172.17.2.162";
     	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	MACAddress clientMacAddr2 = MACAddress.valueOf("00:00:00:00:00:02");
     	agentManager.setAgentTimeout(1000);
     	
-    	// Add an agent with one client associated to it
+    	// Add an agent and associate a client to it
     	addAgentWithMockSwitch(ipAddress1, 12345);
-
-    	// Authorise client
     	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
@@ -450,7 +449,21 @@ public class OdinTest {
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
 
     	
-    	//TODO: Test LVAP syncing upon fast recovery
+    	// The following tests the LVAP syncing mechanism
+    	
+    	// Add another agent that already is hosting an LVAP. Make it join.
+    	
+    	List<OdinClient> lvapList = new ArrayList<OdinClient>();
+    	OdinClient oc = new OdinClient(clientMacAddr2, InetAddress.getByName("172.17.1.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
+    	lvapList.add(oc);
+        OdinAgentFactory.setOdinAgentType("MockOdinAgent");
+    	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
+    	
+    	addAgentWithMockSwitch(ipAddress2, 12345);
+    	
+    	assertEquals(clientManager.getClients().size(), 2);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     }
     
 }

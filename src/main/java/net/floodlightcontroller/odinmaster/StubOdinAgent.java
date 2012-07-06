@@ -44,7 +44,7 @@ public class StubOdinAgent implements IOdinAgent {
 
 	@Override
 	public ConcurrentSkipListSet<OdinClient> getLvapsRemote() {
-		return new ConcurrentSkipListSet<OdinClient>();
+		return clientList;
 	}
 
 	@Override
