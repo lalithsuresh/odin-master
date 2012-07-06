@@ -24,11 +24,17 @@ public class AgentManager {
     private IFloodlightProviderService floodlightProvider;
     private ClientManager clientManager;
 	private Timer failureDetectionTimer = new Timer();
-	private final int AGENT_TIMEOUT = 6000;
+	private int agentTimeout = 6000;
 
  
     public void setFloodlightProvider(IFloodlightProviderService provider) {
     	floodlightProvider = provider;
+    }
+    
+    
+    public void setAgentTimeout (int timeout) {
+    	assert (timeout > 0);
+    	agentTimeout = timeout;
     }
     
     /**
@@ -124,7 +130,7 @@ public class AgentManager {
             		
             		// This TimerTask checks the lastHeard value
             		// of the agent in order to handle failure detection
-            		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, AGENT_TIMEOUT);
+            		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, agentTimeout);
             		
     				return true;
     			}
@@ -148,7 +154,7 @@ public class AgentManager {
 		@Override
 		public void run() {
 			log.info("Executing failure check against: " + agent.getIpAddress());
-			if ((System.currentTimeMillis() - agent.getLastHeard()) >= AGENT_TIMEOUT) {
+			if ((System.currentTimeMillis() - agent.getLastHeard()) >= agentTimeout) {
 				log.error("Agent: " + agent.getIpAddress() + " has timed out");
 				
 				/* This is default behaviour, maybe we should
