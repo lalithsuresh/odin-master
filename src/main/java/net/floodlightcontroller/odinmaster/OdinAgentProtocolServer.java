@@ -33,17 +33,6 @@ public class OdinAgentProtocolServer implements Runnable {
 		this.odinMaster = om; 
 	}
 	
-	private void receivePing (InetAddress odinAgentAddr) {
-		odinMaster.receivePing(odinAgentAddr);
-	}
-	
-	private void receiveProbe (InetAddress odinAgentAddress, MACAddress staHwAddress) {
-	}
-	
-	private void receivePublish (MACAddress staHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
-
-	}
-
 	@Override
 	public void run() {
 		
@@ -68,6 +57,20 @@ public class OdinAgentProtocolServer implements Runnable {
 				System.exit(-1);
 			}
 		}
+	}
+	
+	/** Protocol handlers **/
+	
+	private void receivePing (InetAddress odinAgentAddr) {
+		odinMaster.receivePing(odinAgentAddr);
+	}
+	
+	private void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
+		odinMaster.receiveProbe(odinAgentAddress, clientHwAddress);
+	}
+	
+	private void receivePublish (MACAddress clientHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
+		odinMaster.receivePublish(clientHwAddress, odinAgentAddr, subscriptionIds);
 	}
 	
 	private class OdinAgentConnectionHandler implements Runnable {

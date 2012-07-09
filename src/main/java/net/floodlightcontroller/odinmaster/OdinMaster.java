@@ -4,6 +4,9 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -18,6 +21,10 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.odinmaster.NotificationCallback;
+import net.floodlightcontroller.odinmaster.OdinEventSubscription;
+import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
+import net.floodlightcontroller.odinmaster.SubscriptionCallbackTuple;
 import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.restserver.IRestApiService;
@@ -34,6 +41,11 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 	private AgentManager agentManager = new AgentManager();
 	private ClientManager clientManager = new ClientManager();	
 	private ILvapManager lvapManager = new LvapManagerImpl();
+	
+	private long subscriptionId = 0;
+	private String subscriptionList = "";
+	private ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
+
 
 	
 	public OdinMaster(AgentManager agentManager, ClientManager clientManager, ILvapManager lvapManager){
@@ -42,13 +54,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		this.lvapManager = lvapManager;
 	}
 	
-	public void receivePing (InetAddress odinAgentAddr) {
+	
+	/** Odin Agent->Master protocol handlers **/
+	
+	public synchronized void receivePing (InetAddress odinAgentAddr) {
 		if (agentManager.receivePing(odinAgentAddr)) {
 			// push subscriptions
 		}
 	}
 	
-	public void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
+	public synchronized void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
 		if (odinAgentAddress != null
 	    	&& clientHwAddress != null
 	    	&& clientHwAddress.isBroadcast() == false
@@ -74,11 +89,41 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		}
 	}
 	
-	public void receivePublish (MACAddress staHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
+	public synchronized void receivePublish (MACAddress staHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
+
+		// The check for null staHwAddress might go away
+		// in the future if we end up having events
+		// that are not related to clients at all.
+		if (staHwAddress == null || odinAgentAddr == null || subscriptionIds == null)
+			return;
 		
+		IOdinAgent oa = agentManager.getOdinAgents().get(odinAgentAddr);
+		
+		// This should never happen!
+		if (oa == null)
+			return;
+
+		for (Entry<Long, Long> entry: subscriptionIds.entrySet()) {
+			SubscriptionCallbackTuple tup = subscriptions.get(entry.getKey());
+			
+			/* This might occur as a race condition when the master
+			 * has cleared all subscriptions, but hasn't notified
+			 * the agent about it yet.
+			 */
+			if (tup == null)
+				continue;
+
+
+			NotificationCallbackContext cntx = new NotificationCallbackContext();
+			cntx.agent = oa;
+			cntx.staHwAddress = staHwAddress;
+			cntx.value = entry.getValue();
+			
+			tup.cb.exec(tup.oes, cntx);
+		}
 	}
 
-	/** Odin Methods **/
+	/** Odin methods to be used by applications **/
 	
 	/**
 	 * VAP-Handoff a client to a new AP. This operation is idempotent.
@@ -143,6 +188,99 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getOdinAgents().get(currentApIpAddress), client));
 	}
 	
+	
+	/**
+	 * Get a list of Odin agents from the agent tracker
+	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
+	 */
+	public ConcurrentMap<InetAddress, IOdinAgent> getOdinAgents (){
+		return agentManager.getOdinAgents();
+	}
+	
+	
+	/**
+	 * Add a subscription for a particular event defined by oes. cb is
+	 * defines the application specified callback to be invoked during
+	 * notification. If the application plans to delete the subscription,
+	 * later, the onus is upon it to keep track of the subscription
+	 * id for removal later.
+	 * 
+	 * @param oes the susbcription
+	 * @param cb the callback
+	 */
+	public synchronized long registerSubscription (OdinEventSubscription oes, NotificationCallback cb) {
+		assert (oes != null);
+		assert (cb != null);
+		SubscriptionCallbackTuple tup = new SubscriptionCallbackTuple();
+		tup.oes = oes;
+		tup.cb = cb;
+		subscriptionId++;
+		subscriptions.put(subscriptionId, tup);
+		
+		/**
+		 * Update the subscription list, and push to all agents
+		 * TODO: This is a common subsription string being
+		 * sent to all agents. Replace this with per-agent
+		 * subscriptions.
+		 */
+		subscriptionList = "";
+		int count = 0;
+		for (Entry<Long, SubscriptionCallbackTuple> entry: subscriptions.entrySet()) {
+			count++;
+			String addr = entry.getValue().oes.getClient();
+			subscriptionList = subscriptionList + 
+								entry.getKey() + " " + 
+								(addr.equals("*") ? MACAddress.valueOf("00:00:00:00:00:00") : addr)  + " " +
+								entry.getValue().oes.getStatistic() + " " +
+								entry.getValue().oes.getRelation().ordinal() + " " +
+								entry.getValue().oes.getValue() + " ";
+		}
+
+		subscriptionList = String.valueOf(count) + " " + subscriptionList;
+
+		/**
+		 * Should probably have threads to do this
+		 */
+		for (Entry<InetAddress, IOdinAgent> entry : getOdinAgents().entrySet()) {
+			pushSubscriptionListToAgent(entry.getValue());
+		}
+		
+		return subscriptionId;
+	}
+	
+	
+	/**
+	 * Remove a subscription from the list
+	 * 
+	 * @param id subscription id to remove
+	 * @return
+	 */
+	public synchronized void unregisterSubscription (long id) {
+		subscriptions.remove(id);
+		
+		subscriptionList = "";
+		int count = 0;
+		for (Entry<Long, SubscriptionCallbackTuple> entry: subscriptions.entrySet()) {
+			count++;
+			String addr = entry.getValue().oes.getClient();
+			subscriptionList = subscriptionList + 
+								entry.getKey() + " " + 
+								(addr.equals("*") ? MACAddress.valueOf("00:00:00:00:00:00") : addr)  + " " +
+								entry.getValue().oes.getStatistic() + " " +
+								entry.getValue().oes.getRelation().ordinal() + " " +
+								entry.getValue().oes.getValue() + " ";
+		}
+
+		subscriptionList = String.valueOf(count) + " " + subscriptionList;
+
+		/**
+		 * Should probably have threads to do this
+		 */
+		for (Entry<InetAddress, IOdinAgent> entry : getOdinAgents().entrySet()) {
+			pushSubscriptionListToAgent(entry.getValue());
+		}
+	}
+	
 	/** IFloodlightModule methods **/
 	
 	@Override
@@ -203,6 +341,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		
 	}
 
+	/**
+	 * Push the subscription list to the agent
+	 * 
+	 * @param oa agent to push subscription list to
+	 */
+	private void pushSubscriptionListToAgent (IOdinAgent oa) {
+		oa.setSubscriptions(subscriptionList);
+	}
+
+	
 	private class OdinAgentLvapAddRunnable implements Runnable {
 		final IOdinAgent oa;
 		final OdinClient oc;

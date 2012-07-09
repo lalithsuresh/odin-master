@@ -4,7 +4,9 @@ import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -18,6 +20,11 @@ import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.test.MockFloodlightProvider;
+import net.floodlightcontroller.odinmaster.NotificationCallback;
+import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
+import net.floodlightcontroller.odinmaster.OdinApplication;
+import net.floodlightcontroller.odinmaster.OdinEventSubscription;
+import net.floodlightcontroller.odinmaster.OdinEventSubscription.Relation;
 import net.floodlightcontroller.odinmaster.AgentManager;
 import net.floodlightcontroller.odinmaster.ClientManager;
 import net.floodlightcontroller.odinmaster.ILvapManager;
@@ -216,8 +223,7 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
     	// 2. Client should be added
-    	assertEquals(clientManager.getClients().size(), 1);
-    	
+    	assertEquals(clientManager.getClients().size(), 1);    	
     	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
     	
@@ -465,5 +471,410 @@ public class OdinTest {
     	assertEquals(agentManager.getOdinAgents().size(), 2);
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     }
+
+    /**
+     * Test to see if the publish subscribe
+     * interfaces work correctly when there
+     * are multiple applications, each
+     * pushing down a single subscription
+     * with a single handler.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSubscriptionsOneToOne() throws Exception {
+    	DummyApplication1 app1 = new DummyApplication1();
+    	DummyApplication1 app2 = new DummyApplication1();
+    	app1.setOdinMaster(odinMaster);
+    	app1.run(); // This isn't really a thread, but sets up callbacks
+    	
+    	String ipAddress1 = "172.17.2.161";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	agentManager.setAgentTimeout(1000);
+    	
+    	// Add an agent with no clients associated
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	Map<Long, Long> subscriptionIds = new HashMap<Long, Long>();
+    	long id1 = 1;
+    	long id2 = 2;
+    	long id3 = 10;
+    	long id4 = 0;
+    	
+    	// not-so-sane cases //
+    	subscriptionIds.put(id3, 10L);
+
+    	/**
+    	 * Shouldn't trigger anything
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+
+    	// not-so-sane cases //
+    	subscriptionIds.put(id4, 10L);
+
+    	/**
+    	 * Still shouldn't trigger anything
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+
+    	/**
+    	 * Still still shouldn't trigger anything
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+
+    	odinMaster.receivePublish(null, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+
+    	odinMaster.receivePublish(clientMacAddr1, null, subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), null);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+    	
+    	// Semi-sane cases //
+    	subscriptionIds.put(id1, 10L);
+    	
+    	odinMaster.receivePublish(null, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, null, subscriptionIds);
+    	assertEquals(app1.counter, 0);
+    	assertEquals(app2.counter, 0);
+    	
+    	
+    	// Sane cases //
+    	
+    	/**
+    	 * The event registered should be subscription Id 1.
+    	 * This test will break when we change subscriptions to
+    	 * hash values.
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 1);
+    	assertEquals(app2.counter, 0);
+
+    	
+    	/**
+    	 * Now let app2 register its subscription
+    	 */
+    	app2.setOdinMaster(odinMaster);
+    	app2.run();
+    	
+    	/**
+    	 * Should not trigger app2's handler
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 2);
+    	assertEquals(app2.counter, 0);
+    	
+    	subscriptionIds.clear();
+    	subscriptionIds.put(id2, 10L);
+
+    	/**
+    	 * Should only trigger app2's handler
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 2);
+    	assertEquals(app2.counter, 1);
+    }
     
+
+    /**
+     * Test to see if the publish subscribe
+     * interfaces work correctly when there
+     * are multiple applications, each
+     * pushing down multiple subscriptions
+     * bound to a single handler.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSubscriptionsOneToMany() throws Exception {
+     	DummyApplication2 app1 = new DummyApplication2();
+    	DummyApplication2 app2 = new DummyApplication2();
+    	app1.setOdinMaster(odinMaster);
+    	app1.run(); // This isn't really a thread, but sets up callbacks
+    	
+
+    	String ipAddress1 = "172.17.2.161";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	agentManager.setAgentTimeout(1000);
+    	
+    	// Add an agent with no clients associated
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	Map<Long, Long> subscriptionIds = new HashMap<Long, Long>();
+    	long id1 = 1;
+    	long id2 = 2;
+    	long id3 = 3;
+    	long id4 = 4;
+    	
+    	
+    	subscriptionIds.put(id1, 10L);
+    	
+    	/**
+    	 * The event registered should be subscription Id 1.
+    	 * This test will break when we change subscriptions to
+    	 * hash values.
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 1);
+    	assertEquals(app2.counter, 0);
+    	
+
+    	/**
+    	 * add subscription2  as well. The handler should now be called twice for app1.
+    	 */
+    	subscriptionIds.put(id2, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 3);
+    	assertEquals(app2.counter, 0);
+    
+    	
+    	/**
+    	 * Now let app1 register its subscription
+    	 */
+    	app2.setOdinMaster(odinMaster);
+    	app2.run();
+    	
+    	/**
+    	 * Invoke app1's subscriptions, should not invoke app2's handlers
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 5);
+    	assertEquals(app2.counter, 0);
+    	
+    	/**
+    	 * now invoke only app2's subscriptions
+    	 */
+    
+    	subscriptionIds.clear();
+    	subscriptionIds.put(id3, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 5);
+    	assertEquals(app2.counter, 1);
+    	
+    	subscriptionIds.put(id4, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 5);
+    	assertEquals(app2.counter, 3);
+    	
+    	/**
+    	 * now invoke both app's subscriptions
+    	 */
+    
+    	subscriptionIds.clear();
+    	subscriptionIds.put(id1, 10L);
+    	subscriptionIds.put(id3, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 6);
+    	assertEquals(app2.counter, 4);
+    	
+    	subscriptionIds.put(id2, 10L);
+    	subscriptionIds.put(id4, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 8);
+    	assertEquals(app2.counter, 6);
+    }
+    
+    /**
+     * Test to see if the publish subscribe
+     * interfaces work correctly when there
+     * are multiple applications, each
+     * pushing down multiple subscriptions
+     * bound to a a handler each.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSubscriptionsManyToMany() throws Exception {
+    	DummyApplication3 app1 = new DummyApplication3();
+    	DummyApplication3 app2 = new DummyApplication3();
+    	app1.setOdinMaster(odinMaster);
+    	app1.run(); // This isn't really a thread, but sets up callbacks
+    	
+    	String ipAddress1 = "172.17.2.161";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	agentManager.setAgentTimeout(1000);
+    	
+    	// Add an agent with no clients associated
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	Map<Long, Long> subscriptionIds = new HashMap<Long, Long>();
+    	long id1 = 1;
+    	long id2 = 2;
+    	
+    	
+    	subscriptionIds.put(id1, 10L);
+    	
+    	/**
+    	 * The event registered should be subscription Id 1.
+    	 * This test will break when we change subscriptions to
+    	 * hash values.
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter1, 1);
+    	assertEquals(app1.counter2, 0);
+    	
+
+    	subscriptionIds.clear();
+    	subscriptionIds.put(id2, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter1, 1);
+    	assertEquals(app1.counter2, 1);
+    	
+    	subscriptionIds.put(id1, 10L);
+    	
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter1, 2);
+    	assertEquals(app1.counter2, 2);
+    }
+    
+    
+    /**
+     * Test to see if the LVAP generation works correctly
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testLvapGeneration() throws Exception {
+    	LvapManagerImpl lvapManager = new LvapManagerImpl();
+    	
+    	Class target = Class.forName("net.floodlightcontroller.odinmaster.LvapManagerImpl");
+    
+    	Class[] paramTypes = {MACAddress.class};
+    	Method method = target.getDeclaredMethod("getLvap", paramTypes);
+    	method.setAccessible(true);
+ 
+    	Object[] parameters = { MACAddress.valueOf("00:00:00:00:00:01") };
+    	
+    	OdinClient oc1 = (OdinClient) method.invoke(lvapManager, parameters);
+    	
+    	parameters[0] = MACAddress.valueOf("00:00:00:00:00:02");
+    	
+    	OdinClient oc2 = (OdinClient) method.invoke(lvapManager, parameters);
+    	
+    	// Different clients, different details
+    	assertTrue( !oc1.getLvapBssid().equals(oc2.getLvapBssid()) );
+    	assertNull( oc1.getIpAddress() );
+    	assertNull( oc2.getIpAddress() );
+    	assertTrue( oc1.getLvapSsid() == oc2.getLvapSsid() );
+    	assertTrue( oc1.getMacAddress() != oc2.getMacAddress() );
+
+    	// Shouldn't be called, but still.
+    	OdinClient oc3 = (OdinClient) method.invoke(lvapManager, parameters);
+    	
+    	assertTrue( oc3.getLvapBssid().equals(oc2.getLvapBssid()) );
+    	assertNull( oc3.getIpAddress() );
+    	assertNull( oc2.getIpAddress() );
+    	assertTrue( oc3.getLvapSsid() == oc2.getLvapSsid() );
+    	assertTrue( oc3.getMacAddress() == oc2.getMacAddress() );
+    }
+    
+    // Application that registers 1 subscription -> 1 handler
+    private class DummyApplication1 extends OdinApplication {
+    	public int counter = 0;
+    		
+		@Override
+		public void run() {
+			OdinEventSubscription oes = new OdinEventSubscription();
+			oes.setSubscription("*", "signal", Relation.GREATER_THAN, 180);
+			
+			NotificationCallback cb = new NotificationCallback() {
+				
+				@Override
+				public void exec(OdinEventSubscription oes, NotificationCallbackContext cntx) {
+					callback1(oes, cntx);
+				}
+			};
+			
+			odinMaster.registerSubscription(oes, cb);
+		}
+		
+    	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
+    		counter += 1;
+    	}
+    }
+    
+    // Application that registers 2 subscription -> 1 handler    
+    private class DummyApplication2 extends OdinApplication {
+    	public int counter = 0;
+    		
+		@Override
+		public void run() {
+			OdinEventSubscription oes1 = new OdinEventSubscription();
+			OdinEventSubscription oes2 = new OdinEventSubscription();
+			oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 180);
+			oes2.setSubscription("00:00:00:00:00:03", "signal", Relation.LESSER_THAN, 150);
+			
+			NotificationCallback cb = new NotificationCallback() {
+				
+				@Override
+				public void exec(OdinEventSubscription oes, NotificationCallbackContext cntx) {
+					callback1(oes, cntx);
+				}
+			};
+			
+			odinMaster.registerSubscription(oes1, cb);
+			odinMaster.registerSubscription(oes2, cb);
+		}
+		
+    	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
+    		counter += 1;
+    	}
+    }
+
+    // Application that registers 2 subscriptions, and handler for each
+    private class DummyApplication3 extends OdinApplication {
+    	public int counter1 = 0;
+    	public int counter2 = 0;
+    		
+		@Override
+		public void run() {
+			OdinEventSubscription oes1 = new OdinEventSubscription();
+			OdinEventSubscription oes2 = new OdinEventSubscription();
+			oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 180);
+			oes2.setSubscription("00:00:00:00:00:03", "signal", Relation.LESSER_THAN, 150);
+			
+			NotificationCallback cb1 = new NotificationCallback() {
+				
+				@Override
+				public void exec(OdinEventSubscription oes, NotificationCallbackContext cntx) {
+					callback1(oes, cntx);
+				}
+			};
+			
+			NotificationCallback cb2 = new NotificationCallback() {
+				
+				@Override
+				public void exec(OdinEventSubscription oes, NotificationCallbackContext cntx) {
+					callback2(oes, cntx);
+				}
+			};
+			
+			odinMaster.registerSubscription(oes1, cb1);
+			odinMaster.registerSubscription(oes2, cb2);
+		}
+		
+    	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
+    		counter1 += 1;
+    	}
+    	
+    	private void callback2(OdinEventSubscription oes, NotificationCallbackContext cntx){
+    		counter2 += 1;
+    	}
+    }
 }
