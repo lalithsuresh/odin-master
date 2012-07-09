@@ -19,20 +19,23 @@ import net.floodlightcontroller.util.MACAddress;
 
 
 public class AgentManager {
-	private ConcurrentHashMap<InetAddress, IOdinAgent> agentMap = new ConcurrentHashMap<InetAddress, IOdinAgent> ();
+	private final ConcurrentHashMap<InetAddress, IOdinAgent> agentMap = new ConcurrentHashMap<InetAddress, IOdinAgent> ();
     protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
     private IFloodlightProviderService floodlightProvider;
-    private ClientManager clientManager;
-	private Timer failureDetectionTimer = new Timer();
+    private final ClientManager clientManager;
+	private final Timer failureDetectionTimer = new Timer();
 	private int agentTimeout = 6000;
 
+	public AgentManager (final ClientManager clientManager) {
+		this.clientManager = clientManager;
+	}
  
     public void setFloodlightProvider(IFloodlightProviderService provider) {
     	floodlightProvider = provider;
     }
     
     
-    public void setAgentTimeout (int timeout) {
+    public void setAgentTimeout (final int timeout) {
     	assert (timeout > 0);
     	agentTimeout = timeout;
     }
@@ -44,19 +47,9 @@ public class AgentManager {
 	 * @param odinAgentInetAddress
 	 * @return true if the agent is being tracked
 	 */
-	public boolean isTracked(InetAddress odinAgentInetAddress) {
+	public boolean isTracked(final InetAddress odinAgentInetAddress) {
 		return agentMap.containsKey(odinAgentInetAddress);
 	}
-
-	
-	/**
-	 * set the client manager
-	 * @param clientManager
-	 */
-	public void setClientManager(ClientManager clientManager) {
-		this.clientManager = clientManager;
-	}
-	
 	
 	/**
 	 * Get the list of agents being tracked
@@ -75,7 +68,7 @@ public class AgentManager {
      * @param odinAgentAddr
      * @return true if an agent was added
      */
-	public boolean receivePing(InetAddress odinAgentAddr) {
+	public boolean receivePing(final InetAddress odinAgentAddr) {
 		log.info("Ping message from: " + odinAgentAddr);
 		
 		// If this is the first time we're hearing from this
@@ -145,9 +138,9 @@ public class AgentManager {
 	
 	
 	private class OdinAgentFailureDetectorTask extends TimerTask {
-		private IOdinAgent agent;
+		private final IOdinAgent agent;
 		
-		public OdinAgentFailureDetectorTask (IOdinAgent oa){
+		public OdinAgentFailureDetectorTask (final IOdinAgent oa){
 			this.agent = oa;
 		}
 		

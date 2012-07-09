@@ -26,7 +26,7 @@ public class OdinAgentProtocolServer implements Runnable {
 	private final int ODIN_AGENT_PORT = 6777;
 	
 	private DatagramSocket controllerSocket;
-	private ExecutorService executor = Executors.newFixedThreadPool(4);
+	private final ExecutorService executor = Executors.newFixedThreadPool(4);
 	private OdinMaster odinMaster;
 
 	public void setOdinMaster (OdinMaster om) {
@@ -45,8 +45,8 @@ public class OdinAgentProtocolServer implements Runnable {
 		while(true)	{
 			
 			try {
-				byte[] receiveData = new byte[1024]; // We can probably live with less
-				DatagramPacket receivedPacket = new DatagramPacket(receiveData, receiveData.length);
+				final byte[] receiveData = new byte[1024]; // We can probably live with less
+				final DatagramPacket receivedPacket = new DatagramPacket(receiveData, receiveData.length);
 				controllerSocket.receive(receivedPacket);
 				
 				executor.execute(new OdinAgentConnectionHandler(receivedPacket));
@@ -61,30 +61,30 @@ public class OdinAgentProtocolServer implements Runnable {
 	
 	/** Protocol handlers **/
 	
-	private void receivePing (InetAddress odinAgentAddr) {
+	private void receivePing (final InetAddress odinAgentAddr) {
 		odinMaster.receivePing(odinAgentAddr);
 	}
 	
-	private void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
+	private void receiveProbe (final InetAddress odinAgentAddress, final MACAddress clientHwAddress) {
 		odinMaster.receiveProbe(odinAgentAddress, clientHwAddress);
 	}
 	
-	private void receivePublish (MACAddress clientHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
+	private void receivePublish (final MACAddress clientHwAddress, final InetAddress odinAgentAddr, final Map<Long, Long> subscriptionIds) {
 		odinMaster.receivePublish(clientHwAddress, odinAgentAddr, subscriptionIds);
 	}
 	
 	private class OdinAgentConnectionHandler implements Runnable {
 		final DatagramPacket receivedPacket;
 		
-		public OdinAgentConnectionHandler(DatagramPacket dp) {
+		public OdinAgentConnectionHandler(final DatagramPacket dp) {
 			receivedPacket = dp;
 		}
 		
 		// Agent message handler
 		public void run() {			
-			String msg = new String(receivedPacket.getData()).trim().toLowerCase();
-            String msg_type = msg.split(" ")[0];
-            InetAddress odinAgentAddr = receivedPacket.getAddress();
+			final String msg = new String(receivedPacket.getData()).trim().toLowerCase();
+			final String msg_type = msg.split(" ")[0];
+			final InetAddress odinAgentAddr = receivedPacket.getAddress();
             
             if (msg_type.equals(ODIN_MSG_PING)) {
             	receivePing(odinAgentAddr);
@@ -92,14 +92,14 @@ public class OdinAgentProtocolServer implements Runnable {
             else if (msg_type.equals(ODIN_MSG_PROBE)) {
             	// 2nd part of message should contain
             	// the STA's MAC address
-            	String staAddress = msg.split(" ")[1];
+            	final String staAddress = msg.split(" ")[1];
             	receiveProbe(odinAgentAddr, MACAddress.valueOf(staAddress));
             }
             else if (msg_type.equals(ODIN_MSG_PUBLISH)) {
-            	String entries[] = msg.split(" ");
-            	String staAddress = entries[1];
-            	int count = Integer.parseInt(entries[2]);
-            	Map<Long, Long> matchingIds = new HashMap<Long,Long> ();
+            	final String entries[] = msg.split(" ");
+            	final String staAddress = entries[1];
+            	final int count = Integer.parseInt(entries[2]);
+            	final Map<Long, Long> matchingIds = new HashMap<Long,Long> ();
      
             	for (int i = 0; i < count; i++) {
             		matchingIds.put(Long.parseLong(entries[3 + i].split(":")[0]), Long.parseLong(entries[3 + i].split(":")[1]));

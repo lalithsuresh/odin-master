@@ -45,17 +45,21 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 	private IFloodlightProviderService floodlightProvider;
 	private IStaticFlowEntryPusherService staticFlowEntryPusher;
-	private Executor executor = Executors.newFixedThreadPool(10);
+	private final Executor executor = Executors.newFixedThreadPool(10);
 	
-	private AgentManager agentManager = new AgentManager();
-	private ClientManager clientManager = new ClientManager();	
-	private ILvapManager lvapManager = new LvapManagerImpl();
+	private final AgentManager agentManager;
+	private final ClientManager clientManager;	
+	private final ILvapManager lvapManager;
 	
 	private long subscriptionId = 0;
 	private String subscriptionList = "";
-	private ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
+	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
 
-
+	public OdinMaster(){
+		clientManager = new ClientManager();
+		agentManager = new AgentManager(clientManager);
+		lvapManager = new LvapManagerImpl();
+	}
 	
 	public OdinMaster(AgentManager agentManager, ClientManager clientManager, ILvapManager lvapManager){
 		this.agentManager = agentManager;
@@ -71,7 +75,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * 
 	 * @param InetAddress of the agent
 	 */
-	public synchronized void receivePing (InetAddress odinAgentAddr) {
+	public synchronized void receivePing (final InetAddress odinAgentAddr) {
 		if (agentManager.receivePing(odinAgentAddr)) {
 			// if the above leads to a new agent being
 			// tracked, push the current subscription list
@@ -87,7 +91,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param odinAgentAddress InetAddress of agent
 	 * @param clientHwAddress MAC address of client that performed probe scan
 	 */
-	public synchronized void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
+	public synchronized void receiveProbe (final InetAddress odinAgentAddress, final MACAddress clientHwAddress) {
 		if (odinAgentAddress != null
 	    	&& clientHwAddress != null
 	    	&& clientHwAddress.isBroadcast() == false
@@ -116,16 +120,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	/**
 	 * Handle an event publication from an agent
 	 * 
-	 * @param staHwAddress client which triggered the event
+	 * @param clientHwAddress client which triggered the event
 	 * @param odinAgentAddr agent at which the event was triggered
 	 * @param subscriptionIds list of subscription Ids that the event matches
 	 */
-	public synchronized void receivePublish (MACAddress staHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
+	public synchronized void receivePublish (final MACAddress clientHwAddress, final InetAddress odinAgentAddr, final Map<Long, Long> subscriptionIds) {
 
-		// The check for null staHwAddress might go away
+		// The check for null clientHwAddress might go away
 		// in the future if we end up having events
 		// that are not related to clients at all.
-		if (staHwAddress == null || odinAgentAddr == null || subscriptionIds == null)
+		if (clientHwAddress == null || odinAgentAddr == null || subscriptionIds == null)
 			return;
 		
 		IOdinAgent oa = agentManager.getOdinAgents().get(odinAgentAddr);
@@ -147,7 +151,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 			NotificationCallbackContext cntx = new NotificationCallbackContext();
 			cntx.agent = oa;
-			cntx.staHwAddress = staHwAddress;
+			cntx.clientHwAddress = clientHwAddress;
 			cntx.value = entry.getValue();
 			
 			tup.cb.exec(tup.oes, cntx);
@@ -162,12 +166,12 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param newApIpAddr IPv4 address of new access point
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
-	public void handoffClientToAp (MACAddress staHwAddr, InetAddress newApIpAddr){
+	public void handoffClientToAp (final MACAddress clientHwAddr, final InetAddress newApIpAddr){
 		// As an optimisation, we probably need to get the accessing done first,
 		// prime both nodes, and complete a handoff. 
 		
-		if (staHwAddr == null || newApIpAddr == null) {
-			log.error("null argument in handoffClientToAp(): staHwAddr:" + staHwAddr + " newApIpAddr:" + newApIpAddr);
+		if (clientHwAddr == null || newApIpAddr == null) {
+			log.error("null argument in handoffClientToAp(): clientHwAddr:" + clientHwAddr + " newApIpAddr:" + newApIpAddr);
 			return;
 		}
 		
@@ -179,18 +183,18 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			return;
 		}
 		
-		OdinClient client = clientManager.getClient(staHwAddr);
+		OdinClient client = clientManager.getClient(clientHwAddr);
 		
 		// Ignore request if we don't know the client
 		if (client == null) {
-			log.error("Handoff request ignored: OdinClient " + staHwAddr + " doesn't exist");
+			log.error("Handoff request ignored: OdinClient " + clientHwAddr + " doesn't exist");
 			return;
 		}
 		
 		// If the client is connecting for the first time, then it
 		// doesn't have a VAP associated with it already
 		if (client.getOdinAgent() == null) {
-			log.info ("Client: " + staHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
+			log.info ("Client: " + clientHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
 			//FIXME: setupFlows(newAgent, client.getIpAddress().getHostAddress());
 			newAgent.addLvap(client);
 			client.setOdinAgent(newAgent);
@@ -201,7 +205,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		// the request.
 		InetAddress currentApIpAddress = client.getOdinAgent().getIpAddress();
 		if (currentApIpAddress.getHostAddress().equals(newApIpAddr.getHostAddress())) {
-			log.info ("Client " + staHwAddr + " is already associated with AP " + newApIpAddr);
+			log.info ("Client " + clientHwAddr + " is already associated with AP " + newApIpAddr);
 			return;
 		}
 
@@ -239,7 +243,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param oes the susbcription
 	 * @param cb the callback
 	 */
-	public synchronized long registerSubscription (OdinEventSubscription oes, NotificationCallback cb) {
+	public synchronized long registerSubscription (final OdinEventSubscription oes, final NotificationCallback cb) {
 		assert (oes != null);
 		assert (cb != null);
 		SubscriptionCallbackTuple tup = new SubscriptionCallbackTuple();
@@ -258,7 +262,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		int count = 0;
 		for (Entry<Long, SubscriptionCallbackTuple> entry: subscriptions.entrySet()) {
 			count++;
-			String addr = entry.getValue().oes.getClient();
+			final String addr = entry.getValue().oes.getClient();
 			subscriptionList = subscriptionList + 
 								entry.getKey() + " " + 
 								(addr.equals("*") ? MACAddress.valueOf("00:00:00:00:00:00") : addr)  + " " +
@@ -286,14 +290,14 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param id subscription id to remove
 	 * @return
 	 */
-	public synchronized void unregisterSubscription (long id) {
+	public synchronized void unregisterSubscription (final long id) {
 		subscriptions.remove(id);
 		
 		subscriptionList = "";
 		int count = 0;
 		for (Entry<Long, SubscriptionCallbackTuple> entry: subscriptions.entrySet()) {
 			count++;
-			String addr = entry.getValue().oes.getClient();
+			final String addr = entry.getValue().oes.getClient();
 			subscriptionList = subscriptionList + 
 								entry.getKey() + " " + 
 								(addr.equals("*") ? MACAddress.valueOf("00:00:00:00:00:00") : addr)  + " " +
@@ -342,10 +346,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	}
 
 	@Override
-	public void startUp(FloodlightModuleContext context) {
+	public void startUp(FloodlightModuleContext context) {		
 		floodlightProvider.addOFSwitchListener(this);
 		agentManager.setFloodlightProvider (floodlightProvider);
-		agentManager.setClientManager (clientManager);
 		
 		// Spawn threads
 		executor.execute(new OdinAgentProtocolServer());
@@ -367,7 +370,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	public void removedSwitch(IOFSwitch sw) {
 		// Not all OF switches are Odin agents. We should immediately remove
 		// any associated Odin agent then.
-		InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
+		final InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
 		agentManager.getOdinAgents().remove(switchIpAddr);		
 	}
 
@@ -376,7 +379,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * 
 	 * @param oa agent to push subscription list to
 	 */
-	private void pushSubscriptionListToAgent (IOdinAgent oa) {
+	private void pushSubscriptionListToAgent (final IOdinAgent oa) {
 		oa.setSubscriptions(subscriptionList);
 	}
 

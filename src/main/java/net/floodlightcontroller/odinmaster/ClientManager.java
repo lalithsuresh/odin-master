@@ -8,7 +8,7 @@ import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 public class ClientManager {
-	private ConcurrentMap<MACAddress, OdinClient> odinClientMap = new ConcurrentHashMap<MACAddress, OdinClient> ();
+	private final ConcurrentMap<MACAddress, OdinClient> odinClientMap = new ConcurrentHashMap<MACAddress, OdinClient> ();
 
 	
 	/**
@@ -19,8 +19,8 @@ public class ClientManager {
 	 * @param vapBssid Client specific VAP bssid
 	 * @param vapEssid Client specific VAP essid
 	 */
-	public void addClient (MACAddress hwAddress, InetAddress ipv4Address, MACAddress vapBssid, String vapEssid) {
-		odinClientMap.put(hwAddress, new OdinClient (hwAddress, ipv4Address, vapBssid, vapEssid));
+	public void addClient (final MACAddress clientHwAddress, final InetAddress ipv4Address, final MACAddress vapBssid, final String vapEssid) {
+		odinClientMap.put(clientHwAddress, new OdinClient (clientHwAddress, ipv4Address, vapBssid, vapEssid));
 	}
 	
 	
@@ -32,7 +32,7 @@ public class ClientManager {
 	 * @param vapBssid Client specific VAP bssid
 	 * @param vapEssid Client specific VAP essid
 	 */
-	public void addClient (OdinClient oc) {
+	public void addClient (final OdinClient oc) {
 		odinClientMap.put(oc.getMacAddress(), oc);
 	}
 	
@@ -42,16 +42,16 @@ public class ClientManager {
 	 * 
 	 * @param hwAddress Client's hw address
 	 */
-	public void removeClient (MACAddress hwAddress) {
-		odinClientMap.remove(hwAddress);
+	public void removeClient (final MACAddress clientHwAddress) {
+		odinClientMap.remove(clientHwAddress);
 	}
 	
 	
 	/**
 	 * Get a client by hw address
 	 */
-	public OdinClient getClient (MACAddress hwAddress) {
-		return odinClientMap.get(hwAddress);
+	public OdinClient getClient (final MACAddress clientHwAddress) {
+		return odinClientMap.get(clientHwAddress);
 	}
 	
 	

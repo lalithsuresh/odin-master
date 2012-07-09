@@ -12,7 +12,7 @@ public class LvapManagerImpl implements ILvapManager{
 	private final String DEFAULT_SSID = "odin";
 	
 	@Override
-	public OdinClient getLvap(MACAddress clientHwAddress) {
+	public OdinClient getLvap(final MACAddress clientHwAddress) {
 
 		// Generate random BSSID
 		// FIXME: This code can seriously be improved :)

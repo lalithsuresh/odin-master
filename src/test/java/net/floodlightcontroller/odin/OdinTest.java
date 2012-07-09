@@ -101,8 +101,8 @@ public class OdinTest {
         
         OdinAgentFactory.setOdinAgentType("MockOdinAgent");
         
-        agentManager = new AgentManager();
         clientManager = new ClientManager();
+        agentManager = new AgentManager(clientManager);
         lvapManager = new LvapManagerImpl();
         odinMaster = new OdinMaster(agentManager, clientManager, lvapManager);
         
@@ -120,7 +120,6 @@ public class OdinTest {
         restApi.startUp(cntx);
         
         mockFloodlightProvider.addOFSwitchListener(odinMaster);
-        agentManager.setClientManager(clientManager);
         agentManager.setFloodlightProvider(mockFloodlightProvider);
     }
     
