@@ -585,6 +585,34 @@ public class OdinTest {
     	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
     	assertEquals(app1.counter, 2);
     	assertEquals(app2.counter, 1);
+    	
+    	
+    	odinMaster.unregisterSubscription(id1);
+    	
+    	/**
+    	 * Should only trigger app2's handler
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 2);
+    	assertEquals(app2.counter, 2);
+    	
+    	odinMaster.unregisterSubscription(id1);
+    	
+    	/**
+    	 * Should only trigger app2's handler
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 2);
+    	assertEquals(app2.counter, 3);
+    	
+    	odinMaster.unregisterSubscription(id2);
+    	
+    	/**
+    	 * Should not trigger any handler
+    	 */
+    	odinMaster.receivePublish(clientMacAddr1, InetAddress.getByName(ipAddress1), subscriptionIds);
+    	assertEquals(app1.counter, 2);
+    	assertEquals(app2.counter, 3);
     }
     
 
@@ -742,8 +770,7 @@ public class OdinTest {
     	assertEquals(app1.counter1, 2);
     	assertEquals(app1.counter2, 2);
     }
-    
-    
+        
     /**
      * Test to see if the LVAP generation works correctly
      * 
