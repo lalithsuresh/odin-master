@@ -57,12 +57,27 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 	
 	/** Odin Agent->Master protocol handlers **/
 	
+	/**
+	 * Handle a ping from an agent
+	 * 
+	 * @param InetAddress of the agent
+	 */
 	public synchronized void receivePing (InetAddress odinAgentAddr) {
 		if (agentManager.receivePing(odinAgentAddr)) {
-			// push subscriptions
+			// if the above leads to a new agent being
+			// tracked, push the current subscription list
+			// to it.
+			pushSubscriptionListToAgent(agentManager.getOdinAgents().get(odinAgentAddr));
 		}
 	}
 	
+	/**
+	 * Handle a probe message from an agent, triggered
+	 * by a particular client.
+	 * 
+	 * @param odinAgentAddress InetAddress of agent
+	 * @param clientHwAddress MAC address of client that performed probe scan
+	 */
 	public synchronized void receiveProbe (InetAddress odinAgentAddress, MACAddress clientHwAddress) {
 		if (odinAgentAddress != null
 	    	&& clientHwAddress != null
@@ -89,6 +104,13 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		}
 	}
 	
+	/**
+	 * Handle an event publication from an agent
+	 * 
+	 * @param staHwAddress client which triggered the event
+	 * @param odinAgentAddr agent at which the event was triggered
+	 * @param subscriptionIds list of subscription Ids that the event matches
+	 */
 	public synchronized void receivePublish (MACAddress staHwAddress, InetAddress odinAgentAddr, Map<Long, Long> subscriptionIds) {
 
 		// The check for null staHwAddress might go away
