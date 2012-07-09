@@ -1,6 +1,7 @@
 package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -31,7 +32,15 @@ import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.util.MACAddress;
 
-public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
+
+/**
+ * OdinMaster implementation. Exposes interfaces to OdinApplications,
+ * and keeps track of agents and clients in the system.
+ * 
+ * @author Lalith Suresh <suresh.lalith@gmail.com>
+ *
+ */
+public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface {
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
 
 	private IFloodlightProviderService floodlightProvider;
@@ -145,7 +154,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 		}
 	}
 
-	/** Odin methods to be used by applications **/
+	/** Odin methods to be used by applications (from IOdinApplicationInterface) **/
 	
 	/**
 	 * VAP-Handoff a client to a new AP. This operation is idempotent.
@@ -317,13 +326,11 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 
 	@Override
 	public Collection<Class<? extends IFloodlightService>> getModuleServices() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Map<Class<? extends IFloodlightService>, IFloodlightService> getServiceImpls() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -353,14 +360,15 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener {
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void removedSwitch(IOFSwitch sw) {
-		// TODO Auto-generated method stub
-		
+		// Not all OF switches are Odin agents. We should immediately remove
+		// any associated Odin agent then.
+		InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
+		agentManager.getOdinAgents().remove(switchIpAddr);		
 	}
 
 	/**

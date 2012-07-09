@@ -485,7 +485,7 @@ public class OdinTest {
     public void testSubscriptionsOneToOne() throws Exception {
     	DummyApplication1 app1 = new DummyApplication1();
     	DummyApplication1 app2 = new DummyApplication1();
-    	app1.setOdinMaster(odinMaster);
+    	app1.setOdinInterface(odinMaster);
     	app1.run(); // This isn't really a thread, but sets up callbacks
     	
     	String ipAddress1 = "172.17.2.161";
@@ -566,7 +566,7 @@ public class OdinTest {
     	/**
     	 * Now let app2 register its subscription
     	 */
-    	app2.setOdinMaster(odinMaster);
+    	app2.setOdinInterface(odinMaster);
     	app2.run();
     	
     	/**
@@ -629,7 +629,7 @@ public class OdinTest {
     public void testSubscriptionsOneToMany() throws Exception {
      	DummyApplication2 app1 = new DummyApplication2();
     	DummyApplication2 app2 = new DummyApplication2();
-    	app1.setOdinMaster(odinMaster);
+    	app1.setOdinInterface(odinMaster);
     	app1.run(); // This isn't really a thread, but sets up callbacks
     	
 
@@ -671,7 +671,7 @@ public class OdinTest {
     	/**
     	 * Now let app1 register its subscription
     	 */
-    	app2.setOdinMaster(odinMaster);
+    	app2.setOdinInterface(odinMaster);
     	app2.run();
     	
     	/**
@@ -731,7 +731,7 @@ public class OdinTest {
     public void testSubscriptionsManyToMany() throws Exception {
     	DummyApplication3 app1 = new DummyApplication3();
     	DummyApplication3 app2 = new DummyApplication3();
-    	app1.setOdinMaster(odinMaster);
+    	app1.setOdinInterface(odinMaster);
     	app1.run(); // This isn't really a thread, but sets up callbacks
     	
     	String ipAddress1 = "172.17.2.161";

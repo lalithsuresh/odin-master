@@ -10,13 +10,13 @@ package net.floodlightcontroller.odinmaster;
  */
 public abstract class OdinApplication implements Runnable {
 
-	protected OdinMaster odinMaster;
+	protected IOdinApplicationInterface odinApplicationInterface;
 	
 	/**
 	 * Set the OdinMaster to use
 	 */
-	public void setOdinMaster (OdinMaster om) {
-		odinMaster = om;
+	public void setOdinInterface (IOdinApplicationInterface om) {
+		odinApplicationInterface = om;
 	}
 	
 	/**
