@@ -92,13 +92,14 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param clientHwAddress MAC address of client that performed probe scan
 	 */
 	public synchronized void receiveProbe (final InetAddress odinAgentAddress, final MACAddress clientHwAddress) {
+		
 		if (odinAgentAddress != null
 	    	&& clientHwAddress != null
 	    	&& clientHwAddress.isBroadcast() == false
 	    	&& clientHwAddress.isMulticast() == false
 	    	&& agentManager.isTracked(odinAgentAddress) == true) {
-				    	
-	    	OdinClient oc = clientManager.getClient(clientHwAddress);
+			
+			OdinClient oc = clientManager.getClient(clientHwAddress);
 	    	
 	    	// Hearing from this client for the first time
 	    	if (oc == null) {
@@ -149,10 +150,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				continue;
 
 
-			NotificationCallbackContext cntx = new NotificationCallbackContext();
-			cntx.agent = oa;
-			cntx.clientHwAddress = clientHwAddress;
-			cntx.value = entry.getValue();
+			NotificationCallbackContext cntx = new NotificationCallbackContext(clientHwAddress, oa, entry.getValue());
 			
 			tup.cb.exec(tup.oes, cntx);
 		}
@@ -351,7 +349,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		agentManager.setFloodlightProvider (floodlightProvider);
 		
 		// Spawn threads
-		executor.execute(new OdinAgentProtocolServer());
+		executor.execute(new OdinAgentProtocolServer(this));
 	}
 
 	/** IOFSwitchListener methods **/

@@ -27,9 +27,9 @@ public class OdinAgentProtocolServer implements Runnable {
 	
 	private DatagramSocket controllerSocket;
 	private final ExecutorService executor = Executors.newFixedThreadPool(4);
-	private OdinMaster odinMaster;
+	private final OdinMaster odinMaster;
 
-	public void setOdinMaster (OdinMaster om) {
+	public OdinAgentProtocolServer (OdinMaster om) {
 		this.odinMaster = om; 
 	}
 	
