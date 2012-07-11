@@ -292,10 +292,6 @@ public class OdinAgent implements IOdinAgent {
 	 * @param handlerText Write string
 	 */
 	private synchronized void invokeWriteHandler (String handlerName, String handlerText) {
-		long start = System.nanoTime();
 		outBuf.println("WRITE " + ODIN_AGENT_ELEMENT + "." + handlerName + " " + handlerText);
-		long end = System.nanoTime();
-		long ans = (end - start)/1000;
-		System.out.println(handlerName + " TIMESTAMP: " + ans);
 	}
 }
