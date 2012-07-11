@@ -2,7 +2,6 @@ package net.floodlightcontroller.odinmaster;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinAgent;

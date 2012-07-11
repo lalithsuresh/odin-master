@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import org.openflow.protocol.OFType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,6 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
 
 	private IFloodlightProviderService floodlightProvider;
-	private IStaticFlowEntryPusherService staticFlowEntryPusher;
 	private final Executor executor = Executors.newFixedThreadPool(10);
 	
 	private final AgentManager agentManager;
@@ -354,8 +352,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	@Override
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
-		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);		
-		staticFlowEntryPusher = context.getServiceImpl(IStaticFlowEntryPusherService.class);
+		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
 	}
 
 	@Override

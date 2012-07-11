@@ -3,7 +3,6 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.floodlightcontroller.core.IOFSwitch;

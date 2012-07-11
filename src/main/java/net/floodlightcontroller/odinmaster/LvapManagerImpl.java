@@ -18,7 +18,6 @@ import net.floodlightcontroller.util.MACAddress;
 
 public class LvapManagerImpl implements ILvapManager{
 	
-	private int bssidStart = 1;
 	private final String DEFAULT_SSID = "odin";
 	
 	@Override

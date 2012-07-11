@@ -15,7 +15,6 @@ import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinAgentFactory;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.odinmaster.OdinMaster;
-import net.floodlightcontroller.util.MACAddress;
 
 
 public class AgentManager {
