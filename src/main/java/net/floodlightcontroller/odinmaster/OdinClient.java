@@ -2,6 +2,10 @@ package net.floodlightcontroller.odinmaster;
 
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.openflow.protocol.OFMessage;
 
 import net.floodlightcontroller.util.MACAddress;
 
@@ -10,7 +14,8 @@ public class OdinClient implements Comparable {
 	private InetAddress ipAddress;
 	private MACAddress lvapBssid;
 	private String lvapEssid;
-	private IOdinAgent odinAgent; 
+	private IOdinAgent odinAgent;
+	private List<OFMessage> msgList = new ArrayList<OFMessage>();
 
 	// NOTE: Will need to add security token and temporal keys here later.
 	// So make sure to pass OdinClient through interfaces of other classes
@@ -122,6 +127,25 @@ public class OdinClient implements Comparable {
 	 */
 	public void setLvapSsid(String ssid) {
 		this.lvapEssid = ssid;
+	}
+	
+	
+	/**
+	 * Get the OFMod list for the client
+	 * @return list of OFMod messages 
+	 */
+	public List<OFMessage> getOFMessageList() {
+		return this.msgList;
+	}
+	
+	
+	/**
+	 * Set the OFMod list for the client
+	 * 
+	 * @param List of OFMod messages
+	 */
+	public void setOFMessageList(List<OFMessage> list) {
+		this.msgList = list;
 	}
 	
 	

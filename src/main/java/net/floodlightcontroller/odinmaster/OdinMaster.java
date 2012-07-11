@@ -1,5 +1,9 @@
 package net.floodlightcontroller.odinmaster;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -193,7 +197,14 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		// doesn't have a VAP associated with it already
 		if (client.getOdinAgent() == null) {
 			log.info ("Client: " + clientHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
-			//FIXME: setupFlows(newAgent, client.getIpAddress().getHostAddress());
+
+			// Push flow messages associated with the client
+			try {
+				newAgent.getSwitch().write(client.getOFMessageList(), null);
+			} catch (IOException e) {
+				log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
+			}
+
 			newAgent.addLvap(client);
 			client.setOdinAgent(newAgent);
 			return;
@@ -207,8 +218,12 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			return;
 		}
 
-		// We can do better than this :)
-		//FIXME: setupFlows(newAgent, client.getIpAddress().getHostAddress());
+		// Push flow messages associated with the client
+		try {
+			newAgent.getSwitch().write(client.getOFMessageList(), null);
+		} catch (IOException e) {
+			log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
+		}
 		
 		// Client is with another AP. We remove the VAP from
 		// the current AP of the client, and spawn it on the new one.
@@ -350,13 +365,44 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		
 		// read config options
         Map<String, String> configOptions = context.getConfigParams(this);
+        
+        String authFile = "odin_authorisation"; // default
+        String authFileConfig = configOptions.get("authFile");
+        
+        if (authFileConfig != null) {
+            authFile = authFileConfig;
+        }
+        
+        try {
+			BufferedReader br = new BufferedReader (new FileReader(authFile));
+			
+			String strLine;
+			
+			while ((strLine = br.readLine()) != null) {
+				String [] fields = strLine.split(" ");
+				
+				MACAddress hwAddress = MACAddress.valueOf(fields[0]);
+				InetAddress ipaddr = InetAddress.getByName(fields[1]);
+				MACAddress bssid = MACAddress.valueOf(fields[2]);
+				String essid = fields[3];
+				log.info("Adding client: " + fields[0] + " " + fields[1] + " " +fields[2] + " " +fields[3]);
+				clientManager.addClient(hwAddress, ipaddr, bssid, essid);
+				clientManager.getClients().get(hwAddress).setOFMessageList(lvapManager.getDefaultOFModList(ipaddr));
+			}
+		} catch (FileNotFoundException e) {
+			// skip
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+        
         int port = 2819; // default
         
         String portNum = configOptions.get("masterPort");
         if (portNum != null) {
             port = Integer.parseInt(portNum);
         }
-		
+        
 		// Spawn threads
         executor.execute(new OdinAgentProtocolServer(this, port));
 	}

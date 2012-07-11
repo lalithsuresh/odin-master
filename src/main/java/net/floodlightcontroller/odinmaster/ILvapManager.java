@@ -1,5 +1,10 @@
 package net.floodlightcontroller.odinmaster;
 
+import java.net.InetAddress;
+import java.util.List;
+
+import org.openflow.protocol.OFMessage;
+
 import net.floodlightcontroller.util.MACAddress;
 
 public interface ILvapManager {
@@ -14,4 +19,14 @@ public interface ILvapManager {
 	 * @return an OdinClient
 	 */
 	public OdinClient getLvap(MACAddress clientHwAddress);
+	
+	
+	/**
+	 * Get a default list of OFMod messages to associate
+	 * with the LVAP
+	 * 
+	 * @param inetAddr
+	 * @return a list of OFMod messages
+	 */
+	public List<OFMessage> getDefaultOFModList(InetAddress inetAddr);
 }
