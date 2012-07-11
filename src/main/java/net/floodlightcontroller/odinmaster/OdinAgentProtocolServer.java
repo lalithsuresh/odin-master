@@ -22,15 +22,15 @@ public class OdinAgentProtocolServer implements Runnable {
 	private final String ODIN_MSG_PROBE = "probe";
 	private final String ODIN_MSG_PUBLISH = "publish";
 
-	private final int ODIN_SERVER_PORT = 2818;
-	private final int ODIN_AGENT_PORT = 6777;
+	private final int ODIN_SERVER_PORT;
 	
 	private DatagramSocket controllerSocket;
 	private final ExecutorService executor = Executors.newFixedThreadPool(4);
 	private final OdinMaster odinMaster;
 
-	public OdinAgentProtocolServer (OdinMaster om) {
+	public OdinAgentProtocolServer (OdinMaster om, int port) {
 		this.odinMaster = om; 
+		this.ODIN_SERVER_PORT = port;
 	}
 	
 	@Override

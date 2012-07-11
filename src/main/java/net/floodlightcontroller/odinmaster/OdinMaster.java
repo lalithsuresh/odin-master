@@ -348,8 +348,17 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		floodlightProvider.addOFSwitchListener(this);
 		agentManager.setFloodlightProvider (floodlightProvider);
 		
+		// read config options
+        Map<String, String> configOptions = context.getConfigParams(this);
+        int port = 2819; // default
+        
+        String portNum = configOptions.get("masterPort");
+        if (portNum != null) {
+            port = Integer.parseInt(portNum);
+        }
+		
 		// Spawn threads
-		executor.execute(new OdinAgentProtocolServer(this));
+        executor.execute(new OdinAgentProtocolServer(this, port));
 	}
 
 	/** IOFSwitchListener methods **/
