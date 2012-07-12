@@ -167,9 +167,12 @@ public class OdinClient implements Comparable {
 	public int compareTo(Object o) {
 		assert (o instanceof OdinClient);
 		
-		if (this.hwAddress.toLong() >= ((OdinClient)o).hwAddress.toLong())
+		if (this.hwAddress.toLong() == ((OdinClient)o).hwAddress.toLong())
+			return 0;
+		
+		if (this.hwAddress.toLong() > ((OdinClient)o).hwAddress.toLong())
 			return 1;
 		
-		return 0;
+		return -1;
 	}
 }
