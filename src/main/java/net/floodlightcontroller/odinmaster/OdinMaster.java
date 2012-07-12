@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -15,10 +17,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.OFType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
+import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IOFSwitchListener;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
@@ -31,9 +37,13 @@ import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
 import net.floodlightcontroller.odinmaster.SubscriptionCallbackTuple;
 import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinClient;
+import net.floodlightcontroller.packet.DHCP;
+import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.util.MACAddress;
+import net.floodlightcontroller.core.IListener;
 
 
 /**
@@ -43,7 +53,7 @@ import net.floodlightcontroller.util.MACAddress;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface {
+public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener {
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
 
 	private IFloodlightProviderService floodlightProvider;
@@ -105,7 +115,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	    	
 	    	// Hearing from this client for the first time
 	    	if (oc == null) {
-	    		oc = lvapManager.getLvap(clientHwAddress);
+				oc = lvapManager.getLvapWithNullIp(clientHwAddress);
 	    		clientManager.addClient(oc);
 	    	}
 	    	
@@ -358,6 +368,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	@Override
 	public void startUp(FloodlightModuleContext context) {		
 		floodlightProvider.addOFSwitchListener(this);
+		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
 		agentManager.setFloodlightProvider (floodlightProvider);
 		
 		// read config options
@@ -413,7 +424,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 	@Override
 	public String getName() {
-		return null;
+		return "OdinMaster";
 	}
 
 	@Override
@@ -462,5 +473,82 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			oa.removeLvap(oc);
 		}
 		
+	}
+
+	@Override
+	public Command receive(
+			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
+		
+		// We use this to pick up DHCP response frames
+		// and update a client's IP address details accordingly
+		
+		Ethernet frame = IFloodlightProviderService.bcStore.get(cntx, 
+                IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
+
+		IPacket payload = frame.getPayload(); // IP
+        if (payload == null)
+        	return Command.CONTINUE;
+        
+        IPacket p2 = payload.getPayload(); // TCP or UDP
+        
+        if (p2 == null) 
+        	return Command.CONTINUE;
+        
+        IPacket p3 = p2.getPayload(); // Application
+        if ((p3 != null) && (p3 instanceof DHCP)) {
+        	DHCP packet = (DHCP) p3;
+        	try {
+
+        		final MACAddress clientHwAddr = MACAddress.valueOf(packet.getClientHardwareAddress());
+        		final OdinClient oc = clientManager.getClients().get(clientHwAddr);
+        		
+    			// Don't bother if we're not tracking the client
+        		if (oc == null) {
+        			return Command.CONTINUE;
+        		}
+        		
+        		// Look for the Your-IP field in the DHCP packet
+        		if (packet.getYourIPAddress() != 0) {
+        			
+        			// int -> byte array -> InetAddr
+        			final byte[] arr = ByteBuffer.allocate(4).putInt(packet.getYourIPAddress()).array();
+        			final InetAddress yourIp = InetAddress.getByAddress(arr);
+        			
+        			// No need to invoke agent update protocol if the node
+        			// is assigned the same IP
+        			if (yourIp.equals(oc.getIpAddress())) {
+        				return Command.CONTINUE;
+        			}
+        			
+        			log.info("Updating client: " + clientHwAddr + " with ipAddr: " + yourIp);
+        			oc.setIpAddress(yourIp);
+        			oc.setOFMessageList(lvapManager.getDefaultOFModList(yourIp));
+        			
+        			// Push flow messages associated with the client
+        			try {
+        				oc.getOdinAgent().getSwitch().write(oc.getOFMessageList(), null);
+        			} catch (IOException e) {
+        				log.error("Failed to update switch's flow tables " + oc.getOdinAgent().getSwitch());
+        			}
+        			oc.getOdinAgent().updateLvap(oc);
+        		}
+        		
+			} catch (UnknownHostException e) {
+				// Shouldn't ever happen
+				e.printStackTrace();
+			}
+        }
+			
+		return Command.CONTINUE;
+	}
+
+	@Override
+	public boolean isCallbackOrderingPostreq(OFType type, String name) {
+		return false;
+	}
+
+	@Override
+	public boolean isCallbackOrderingPrereq(OFType type, String name) {
+		return false;
 	}
 }

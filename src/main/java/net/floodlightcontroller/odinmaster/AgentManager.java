@@ -72,21 +72,21 @@ public class AgentManager {
 		
 		// If this is the first time we're hearing from this
     	// agent, then keep track of it.
-    	if (odinAgentAddr != null && !agentMap.containsKey (odinAgentAddr))
-    	{
+    	if (odinAgentAddr != null && !agentMap.containsKey (odinAgentAddr)) {
+    		
     		// If the OFSwitch corresponding to the agent has already
     		// registered here, then set it in the OdinAgent object.
     		// Else, we'll handle it when the switch eventually registers.
-    		for (IOFSwitch sw: floodlightProvider.getSwitches().values())
-    		{
+    		for (IOFSwitch sw: floodlightProvider.getSwitches().values()) {
+    			
     			// We're binding by IP addresses now, because we want to pool
     			// an OFSwitch with its corresponding OdinAgent, if any.
     			String switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress().getHostAddress();
-    			if (switchIpAddr.equals(odinAgentAddr.getHostAddress())){
+    			if (switchIpAddr.equals(odinAgentAddr.getHostAddress())) {
     				
     				IOdinAgent oa = OdinAgentFactory.getOdinAgent();
-            		oa.init(odinAgentAddr);
     				oa.setSwitch(sw);
+            		oa.init(odinAgentAddr);
     				oa.setLastHeard(System.currentTimeMillis());
             		
             		// It is possible that the controller is recovering from a failure,
@@ -116,9 +116,6 @@ public class AgentManager {
             		
             		agentMap.put(odinAgentAddr, oa);
             		log.info("Adding OdinAgent to map: " + odinAgentAddr.getHostAddress());
-            		
-            		// TODO: push subscriptions in face of failure
-            		//agentMap.pushSubscriptionListToAgent(oa);
             		
             		// This TimerTask checks the lastHeard value
             		// of the agent in order to handle failure detection

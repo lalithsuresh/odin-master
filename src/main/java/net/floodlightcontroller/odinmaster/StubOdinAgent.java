@@ -82,4 +82,8 @@ public class StubOdinAgent implements IOdinAgent {
 	public void setSubscriptions(String subscriptionList) {
 		// Do nothing.
 	}
+
+	@Override
+	public void updateLvap(OdinClient oc) {		
+	}
 }

@@ -90,6 +90,17 @@ public interface IOdinAgent {
 	
 	
 	/**
+	 * Update a virtual access point with possibly new IP, BSSID, or SSID
+	 * 
+	 * @param staHwAddr The STA's ethernet address
+	 * @param staIpAddr The STA's IP address
+	 * @param vapBssid The STA specific BSSID
+	 * @param staEssid The STA specific SSID
+	 */
+	public void updateLvap(OdinClient oc);
+	
+	
+	/**
 	 * Returns timestamp of last heartbeat from agent
 	 * @return Timestamp
 	 */

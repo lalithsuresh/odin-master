@@ -21,7 +21,7 @@ public class LvapManagerImpl implements ILvapManager{
 	private final String DEFAULT_SSID = "odin";
 	
 	@Override
-	public OdinClient getLvap(final MACAddress clientHwAddress) {
+	public OdinClient getLvapWithNullIp(final MACAddress clientHwAddress) {
 
 		// Generate random BSSID
 		// FIXME: This code can seriously be improved :)
@@ -29,20 +29,8 @@ public class LvapManagerImpl implements ILvapManager{
 		bssidBytes[0] = (byte) 0x00;
 		bssidBytes[1] = (byte) 0x1b;
 		bssidBytes[2] = (byte) 0xb1;
-		
 		MACAddress bssid = MACAddress.valueOf(bssidBytes);
 				
-		try {
-			InetAddress inetAddr = InetAddress.getByName("172.17.2.52");
-			
-			OdinClient oc = new OdinClient(clientHwAddress, inetAddr, bssid, DEFAULT_SSID);
-			oc.setOFMessageList(getDefaultOFModList(inetAddr));
-			
-			return oc;
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		
 		return new OdinClient(clientHwAddress, null, bssid, DEFAULT_SSID);
 	}
 	
