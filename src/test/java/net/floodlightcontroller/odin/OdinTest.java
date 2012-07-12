@@ -782,7 +782,7 @@ public class OdinTest {
     	Class target = Class.forName("net.floodlightcontroller.odinmaster.LvapManagerImpl");
     
     	Class[] paramTypes = {MACAddress.class};
-    	Method method = target.getDeclaredMethod("getLvap", paramTypes);
+    	Method method = target.getDeclaredMethod("getLvapWithNullIp", paramTypes);
     	method.setAccessible(true);
  
     	Object[] parameters = { MACAddress.valueOf("00:00:00:00:00:01") };
