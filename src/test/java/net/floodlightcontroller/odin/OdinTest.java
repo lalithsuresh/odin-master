@@ -424,6 +424,7 @@ public class OdinTest {
     	
     	// Now ping again to revive the agent
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
+    	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	
        	// Agent should be setup again
     	assertEquals(agentManager.getOdinAgents().size(), 1);
@@ -469,8 +470,51 @@ public class OdinTest {
     	assertEquals(clientManager.getClients().size(), 2);
     	assertEquals(agentManager.getOdinAgents().size(), 2);
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
+    	
+    	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
+    
+    
+    /**
+     * Test to see if we can handle agent
+     * failures correctly
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testLvapSyncRaceCondition() throws Exception {
 
+    	String ipAddress1 = "172.17.2.161";
+    	String ipAddress2 = "172.17.2.162";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	
+    	
+    	agentManager.setAgentTimeout(1000);
+ 
+    	// Add an agent and associate a client to it
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
+    	
+    	assertEquals(clientManager.getClients().size(), 1);
+    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+
+    	List<OdinClient> lvapList = new ArrayList<OdinClient>();
+    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	lvapList.add(oc);
+        OdinAgentFactory.setOdinAgentType("MockOdinAgent");
+    	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
+    	
+    	addAgentWithMockSwitch(ipAddress2, 12345);
+    	odinMaster.receivePing(InetAddress.getByName(ipAddress2));
+    	
+    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress2)).getLvapsRemote().contains(oc), false);
+    	
+    	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
+    }
+    	
     /**
      * Test to see if the publish subscribe
      * interfaces work correctly when there

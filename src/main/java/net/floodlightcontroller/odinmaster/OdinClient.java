@@ -156,10 +156,7 @@ public class OdinClient implements Comparable {
 		
 		OdinClient that = (OdinClient) obj;
 		
-		return (this.hwAddress == that.hwAddress 
-				&& this.ipAddress == that.ipAddress 
-				&& this.lvapBssid == that.lvapBssid
-				&& this.lvapEssid.equals(that.lvapEssid));
+		return (this.hwAddress == that.hwAddress);
 	}
 
 	
