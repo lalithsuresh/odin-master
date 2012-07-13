@@ -125,9 +125,6 @@ public class AgentManager {
     			}
     		}
     	}
-    	else if (agentMap.containsKey (odinAgentAddr)) {
-    		agentMap.get(odinAgentAddr).setLastHeard(System.currentTimeMillis());
-    	}
     	
     	return false;
 	}

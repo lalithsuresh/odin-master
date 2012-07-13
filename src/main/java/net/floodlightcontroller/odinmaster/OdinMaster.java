@@ -94,22 +94,27 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			// to it.
 			pushSubscriptionListToAgent(agentManager.getOdinAgents().get(odinAgentAddr));
 		}
+
+		// Update last-heard for failure detection		
+		IOdinAgent agent = agentManager.getOdinAgents().get(odinAgentAddr);
+		if (agent != null)
+			agent.setLastHeard(System.currentTimeMillis());
 	}
 	
 	/**
 	 * Handle a probe message from an agent, triggered
 	 * by a particular client.
 	 * 
-	 * @param odinAgentAddress InetAddress of agent
+	 * @param odinAgentAddr InetAddress of agent
 	 * @param clientHwAddress MAC address of client that performed probe scan
 	 */
-	public synchronized void receiveProbe (final InetAddress odinAgentAddress, final MACAddress clientHwAddress) {
+	public synchronized void receiveProbe (final InetAddress odinAgentAddr, final MACAddress clientHwAddress) {
 		
-		if (odinAgentAddress != null
+		if (odinAgentAddr != null
 	    	&& clientHwAddress != null
 	    	&& clientHwAddress.isBroadcast() == false
 	    	&& clientHwAddress.isMulticast() == false
-	    	&& agentManager.isTracked(odinAgentAddress) == true) {
+	    	&& agentManager.isTracked(odinAgentAddr) == true) {
 			
 			OdinClient oc = clientManager.getClient(clientHwAddress);
 	    	
@@ -125,8 +130,13 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				// disconnected, or knocked
 				// out at as a result of an agent
 				// failure.
-				handoffClientToAp(clientHwAddress, odinAgentAddress);
+				handoffClientToAp(clientHwAddress, odinAgentAddr);
 			}
+			
+			// Update last-heard for failure detection
+			IOdinAgent agent = agentManager.getOdinAgents().get(odinAgentAddr);
+			if (agent != null)
+				agent.setLastHeard(System.currentTimeMillis());
 		}
 	}
 	
@@ -151,6 +161,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		if (oa == null)
 			return;
 
+		// Update last-heard for failure detection
+		oa.setLastHeard(System.currentTimeMillis());
+		
 		for (Entry<Long, Long> entry: subscriptionIds.entrySet()) {
 			SubscriptionCallbackTuple tup = subscriptions.get(entry.getKey());
 			
