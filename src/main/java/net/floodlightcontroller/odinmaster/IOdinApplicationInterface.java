@@ -3,6 +3,7 @@ package net.floodlightcontroller.odinmaster;
 import java.net.InetAddress;
 import java.util.concurrent.ConcurrentMap;
 
+import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 public interface IOdinApplicationInterface {
@@ -15,6 +16,13 @@ public interface IOdinApplicationInterface {
 	 */
 	public void handoffClientToAp (MACAddress staHwAddr, InetAddress newApIpAddr);
 
+	/**
+	 * Get the list of clients currently registered with Odin
+	 * 
+	 * @return a map of OdinClient objects keyed by HW Addresses
+	 */
+	public ConcurrentMap<MACAddress, OdinClient> getClients ();
+	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses

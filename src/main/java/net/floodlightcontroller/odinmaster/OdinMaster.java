@@ -259,6 +259,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	
 	
 	/**
+	 * Get the list of clients currently registered with Odin
+	 * 
+	 * @return a map of OdinClient objects keyed by HW Addresses
+	 */
+	public ConcurrentMap<MACAddress, OdinClient> getClients () {
+		return clientManager.getClients();
+	}
+	
+	
+	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
@@ -424,8 +434,31 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
             port = Integer.parseInt(portNum);
         }
         
-		// Spawn threads
+        // Spawn threads for different services
         executor.execute(new OdinAgentProtocolServer(this, port));
+        
+        // Spawn applications
+        String [] applicationList = configOptions.get("applications").split(",");
+        
+        if (applicationList == null){
+	        log.info("Configuration file doesn't specify any applications to load");
+	        return;
+        }
+        
+        for (String app : applicationList) {
+			try {
+				OdinApplication appInstance = (OdinApplication) Class.forName(app).newInstance();
+				appInstance.setOdinInterface(this);
+				executor.execute(appInstance);
+				
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/** IOFSwitchListener methods **/
