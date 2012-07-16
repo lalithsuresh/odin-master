@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,9 +42,7 @@ import net.floodlightcontroller.packet.DHCP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.restserver.IRestApiService;
-import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.util.MACAddress;
-import net.floodlightcontroller.core.IListener;
 
 
 /**
@@ -53,8 +52,9 @@ import net.floodlightcontroller.core.IListener;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener {
+public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener, IFloodlightService {
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
+	protected IRestApiService restApi;
 
 	private IFloodlightProviderService floodlightProvider;
 	private final Executor executor = Executors.newFixedThreadPool(10);
@@ -368,7 +368,6 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	        new ArrayList<Class<? extends IFloodlightService>>();
 	    l.add(IFloodlightProviderService.class);
         l.add(IRestApiService.class);
-        l.add(IStaticFlowEntryPusherService.class);
 		return l;
 	}
 
@@ -379,19 +378,27 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 	@Override
 	public Map<Class<? extends IFloodlightService>, IFloodlightService> getServiceImpls() {
-		return null;
+		Map<Class<? extends IFloodlightService>,
+        IFloodlightService> m =
+        new HashMap<Class<? extends IFloodlightService>,
+        IFloodlightService>();
+        m.put(OdinMaster.class, this);
+        return m;
 	}
 
 	@Override
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
 		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
+		restApi = context.getServiceImpl(IRestApiService.class);
 	}
 
 	@Override
 	public void startUp(FloodlightModuleContext context) {		
 		floodlightProvider.addOFSwitchListener(this);
 		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
+		restApi.addRestletRoutable(new OdinMasterWebRoutable());
+		
 		agentManager.setFloodlightProvider (floodlightProvider);
 		
 		// read config options
@@ -438,12 +445,14 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         executor.execute(new OdinAgentProtocolServer(this, port));
         
         // Spawn applications
-        String [] applicationList = configOptions.get("applications").split(",");
+        String applicationStr = configOptions.get("applications");
         
-        if (applicationList == null){
+        if (applicationStr == null){
 	        log.info("Configuration file doesn't specify any applications to load");
 	        return;
         }
+        
+        String [] applicationList = applicationStr.split(",");
         
         for (String app : applicationList) {
 			try {
@@ -549,7 +558,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         		final OdinClient oc = clientManager.getClients().get(clientHwAddr);
         		
     			// Don't bother if we're not tracking the client
-        		if (oc == null) {
+        		// or if the client is unassociated with the agent
+        		// or the agent's switch hasn't been registered yet
+        		if (oc == null || oc.getOdinAgent() == null || oc.getOdinAgent().getSwitch() == null) {
         			return Command.CONTINUE;
         		}
         		
