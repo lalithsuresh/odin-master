@@ -17,7 +17,7 @@ public class OdinMobilityManager extends OdinApplication {
 	
 	private void init () {
 		OdinEventSubscription oes1 = new OdinEventSubscription();
-		oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 200);		
+		oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 180);		
 		
 		NotificationCallback cb = new NotificationCallback() {
 			
