@@ -514,6 +514,47 @@ public class OdinTest {
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
+    
+    /**
+     * Test to see if we can handle agent
+     * failures correctly
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testPostFailureLvapSync() throws Exception {
+
+    	String ipAddress1 = "172.17.2.161";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	
+    	
+    	agentManager.setAgentTimeout(1000);
+
+    	List<OdinClient> lvapList = new ArrayList<OdinClient>();
+    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	lvapList.add(oc);
+        OdinAgentFactory.setOdinAgentType("MockOdinAgent");
+    	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
+    	
+    	assertEquals(odinMaster.getClients().size(), 0);
+    	assertEquals(agentManager.getOdinAgents().size(), 0);
+    	
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
+    	
+    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(odinMaster.getClients().size(), 1);
+    	
+    	// Time out the agent
+    	Thread.sleep(2000);
+    	
+    	assertEquals(agentManager.getOdinAgents().size(), 0);
+    	assertEquals(odinMaster.getClients().size(), 1);
+    	assertEquals(odinMaster.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	
+    	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
+    }
     	
     /**
      * Test to see if the publish subscribe

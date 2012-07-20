@@ -26,7 +26,7 @@ public class LvapManagerImpl implements ILvapManager{
 		// Generate random BSSID
 		// FIXME: This code can seriously be improved :)
 		byte[] bssidBytes = clientHwAddress.toBytes();
-		bssidBytes[0] = (byte) 0x00;
+		bssidBytes[0] = (byte) 0xe8;
 		bssidBytes[1] = (byte) 0x1b;
 		bssidBytes[2] = (byte) 0xb1;
 		MACAddress bssid = MACAddress.valueOf(bssidBytes);

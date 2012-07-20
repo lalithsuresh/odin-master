@@ -149,9 +149,9 @@ public class AgentManager {
 				 */
 				
 				// TODO: There should be a way to lock the master
-				// during such operations
+				// during such operations	
 				for (OdinClient oc: agent.getLvapsLocal()) {
-					oc.setOdinAgent(null);
+					clientManager.getClients().get(oc.getMacAddress()).setOdinAgent(null);
 				}
 				
 				// Agent should now be cleared out
