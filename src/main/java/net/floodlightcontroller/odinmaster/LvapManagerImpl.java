@@ -31,7 +31,13 @@ public class LvapManagerImpl implements ILvapManager{
 		bssidBytes[2] = (byte) 0xb1;
 		MACAddress bssid = MACAddress.valueOf(bssidBytes);
 				
-		return new OdinClient(clientHwAddress, null, bssid, DEFAULT_SSID);
+		try {
+			return new OdinClient(clientHwAddress, InetAddress.getByName("0.0.0.0"), bssid, DEFAULT_SSID);
+		} catch (UnknownHostException e) {
+			// This should never happen
+			e.printStackTrace();
+			return new OdinClient(clientHwAddress, null, bssid, DEFAULT_SSID);
+		}
 	}
 	
 	

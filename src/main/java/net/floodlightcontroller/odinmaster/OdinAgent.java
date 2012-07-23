@@ -278,14 +278,8 @@ public class OdinAgent implements IOdinAgent {
 	 *            The STA specific SSID
 	 */
 	public void addLvap(OdinClient oc) {
-		String ipAddr = "0.0.0.0";
-		// Possible in case of DHCP based
-		// assignments
-		if (oc.getIpAddress() != null)
-			ipAddr = oc.getIpAddress().getHostAddress(); 
-			
 		invokeWriteHandler(WRITE_HANDLER_ADD_VAP, oc.getMacAddress().toString()
-				+ " " + ipAddr + " "
+				+ " " + oc.getIpAddress().getHostAddress() + " "
 				+ oc.getLvapBssid().toString() + " " + oc.getLvapSsid());
 		clientList.add(oc);
 	}

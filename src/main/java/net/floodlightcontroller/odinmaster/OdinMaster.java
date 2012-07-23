@@ -15,8 +15,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
@@ -57,7 +58,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	protected IRestApiService restApi;
 
 	private IFloodlightProviderService floodlightProvider;
-	private final Executor executor = Executors.newFixedThreadPool(10);
+	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
 	
 	private final AgentManager agentManager;
 	private final ClientManager clientManager;	
@@ -66,6 +67,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	private long subscriptionId = 0;
 	private String subscriptionList = "";
 	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
+	private int idleLvapTimeout = 30; // Seconds
 
 	public OdinMaster(){
 		clientManager = new ClientManager();
@@ -92,13 +94,21 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			// if the above leads to a new agent being
 			// tracked, push the current subscription list
 			// to it.
-			pushSubscriptionListToAgent(agentManager.getOdinAgents().get(odinAgentAddr));
+			pushSubscriptionListToAgent(agentManager.getOdinAgents().get(odinAgentAddr));			
+
+			// Reclaim idle lvaps
+			for (OdinClient client: agentManager.getOdinAgents().get(odinAgentAddr).getLvapsLocal()) {
+				executor.schedule(new IdleLvapReclaimTask(client), idleLvapTimeout, TimeUnit.SECONDS);
+			}
 		}
 
-		// Update last-heard for failure detection		
+		// Perform some book-keeping
 		IOdinAgent agent = agentManager.getOdinAgents().get(odinAgentAddr);
-		if (agent != null)
+		
+		if (agent != null) {
+			// Update last-heard for failure detection
 			agent.setLastHeard(System.currentTimeMillis());
+		}
 	}
 	
 	/**
@@ -228,6 +238,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 			newAgent.addLvap(client);
 			client.setOdinAgent(newAgent);
+			executor.schedule(new IdleLvapReclaimTask (client), idleLvapTimeout, TimeUnit.SECONDS);
 			return;
 		}
 		
@@ -433,9 +444,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			e.printStackTrace();
 		}
         
+        String timeoutStr = configOptions.get("idleLvapTimeout");
+        if (timeoutStr != null) {
+        	int timeout = Integer.parseInt(timeoutStr);
+        	
+        	if (timeout > 0) {
+        		idleLvapTimeout = timeout;
+        	}
+        }
         
         int port = 2819; // default
-        
         String portNum = configOptions.get("masterPort");
         if (portNum != null) {
             port = Integer.parseInt(portNum);
@@ -607,5 +625,38 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	@Override
 	public boolean isCallbackOrderingPrereq(OFType type, String name) {
 		return false;
+	}
+	
+	private class IdleLvapReclaimTask implements Runnable {
+		private final OdinClient oc;
+		
+		public IdleLvapReclaimTask(final OdinClient oc) {
+			this.oc = oc;
+		}
+		
+		@Override
+		public void run() {
+			OdinClient client = clientManager.getClients().get(oc.getMacAddress());
+			
+			if (client == null) {
+				return;
+			}
+			
+			// Client didn't follow through to connect
+			try {
+				if (client.getIpAddress().equals(InetAddress.getByName("0.0.0.0"))) {
+					IOdinAgent agent = client.getOdinAgent();
+					
+					if (agent != null) {
+						log.info("Clearing Lvap " + client.getMacAddress() + 
+								" from agent:" + agent.getIpAddress() + " due to inactivity");
+						agent.removeLvap(client);
+						clientManager.removeClient(client.getMacAddress());
+					}
+				}
+			} catch (UnknownHostException e) {
+				// skip
+			}
+		}
 	}
 }

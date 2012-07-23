@@ -880,8 +880,8 @@ public class OdinTest {
     	
     	// Different clients, different details
     	assertTrue( !oc1.getLvapBssid().equals(oc2.getLvapBssid()) );
-    	assertNull( oc1.getIpAddress() );
-    	assertNull( oc2.getIpAddress() );
+    	assertTrue( oc1.getIpAddress().getHostAddress().equals("0.0.0.0") );
+    	assertTrue( oc2.getIpAddress().getHostAddress().equals("0.0.0.0") );
     	assertTrue( oc1.getLvapSsid() == oc2.getLvapSsid() );
     	assertTrue( oc1.getMacAddress() != oc2.getMacAddress() );
 
@@ -889,8 +889,8 @@ public class OdinTest {
     	OdinClient oc3 = (OdinClient) method.invoke(lvapManager, parameters);
     	
     	assertTrue( oc3.getLvapBssid().equals(oc2.getLvapBssid()) );
-    	assertNull( oc3.getIpAddress() );
-    	assertNull( oc2.getIpAddress() );
+    	assertTrue( oc3.getIpAddress().getHostAddress().equals("0.0.0.0") );
+    	assertTrue( oc2.getIpAddress().getHostAddress().equals("0.0.0.0") );
     	assertTrue( oc3.getLvapSsid() == oc2.getLvapSsid() );
     	assertTrue( oc3.getMacAddress() == oc2.getMacAddress() );
     }
