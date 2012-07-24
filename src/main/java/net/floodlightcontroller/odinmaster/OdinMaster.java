@@ -274,7 +274,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public ConcurrentMap<MACAddress, OdinClient> getClients () {
+	public Map<MACAddress, OdinClient> getClients () {
 		return clientManager.getClients();
 	}
 	
@@ -283,7 +283,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public ConcurrentMap<InetAddress, IOdinAgent> getOdinAgents (){
+	public Map<InetAddress, IOdinAgent> getOdinAgents (){
 		return agentManager.getOdinAgents();
 	}
 	

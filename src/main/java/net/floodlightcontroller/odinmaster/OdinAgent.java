@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.codehaus.jackson.annotate.JsonValue;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFPort;
@@ -21,8 +22,11 @@ import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.util.U16;
 
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
+import net.floodlightcontroller.core.web.serializers.OdinClientSerializer;
 import net.floodlightcontroller.util.MACAddress;
 
+@JsonSerialize(using=OdinAgentSerializer.class)
 public class OdinAgent implements IOdinAgent {
 
 	// Connect to control socket on OdinAgent

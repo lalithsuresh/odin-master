@@ -5,8 +5,12 @@ import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import net.floodlightcontroller.core.IOFSwitch;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
+
+@JsonSerialize(using=OdinAgentSerializer.class)
 public interface IOdinAgent {
 
 	

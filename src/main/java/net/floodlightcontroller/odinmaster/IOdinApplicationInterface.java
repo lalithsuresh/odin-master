@@ -1,6 +1,7 @@
 package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import net.floodlightcontroller.odinmaster.OdinClient;
@@ -21,13 +22,13 @@ public interface IOdinApplicationInterface {
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public ConcurrentMap<MACAddress, OdinClient> getClients ();
+	public Map<MACAddress, OdinClient> getClients ();
 	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public ConcurrentMap<InetAddress, IOdinAgent> getOdinAgents ();
+	public Map<InetAddress, IOdinAgent> getOdinAgents ();
 	
 	/**
 	 * Add a subscription for a particular event defined by oes. cb is
