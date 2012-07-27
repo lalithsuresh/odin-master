@@ -14,10 +14,11 @@ import net.floodlightcontroller.util.MACAddress;
 public class OdinMobilityManager extends OdinApplication {
 	
 	private ConcurrentMap<MACAddress, Long> clientCurrentSignalMap = new ConcurrentHashMap<MACAddress, Long> ();
+	private ConcurrentMap<MACAddress, Long> clientLastHeardMap = new ConcurrentHashMap<MACAddress, Long> ();
 	
 	private void init () {
 		OdinEventSubscription oes1 = new OdinEventSubscription();
-		oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 180);		
+		oes1.setSubscription("*", "signal", Relation.GREATER_THAN, 190);		
 		
 		NotificationCallback cb = new NotificationCallback() {
 			
@@ -45,12 +46,14 @@ public class OdinMobilityManager extends OdinApplication {
 	private void handler (OdinEventSubscription oes, NotificationCallbackContext cntx) {
 		// Check to see if this is an associated client
 		OdinClient client = odinApplicationInterface.getClients().get(cntx.clientHwAddress);
-
-		if (client != null) {
+		
+		if (client != null) {			
 			// The agent that triggered this handler is the one
 			// hosting the client's LVAP
 			if (client.getOdinAgent() != null && client.getOdinAgent().getIpAddress() == cntx.agent.getIpAddress()) {
 				clientCurrentSignalMap.put(cntx.clientHwAddress, cntx.value);
+				clientLastHeardMap.put(cntx.clientHwAddress, System.currentTimeMillis());				
+				return;
 			}
 			else if ((client.getOdinAgent() == null) || 
 					 (client.getOdinAgent().getIpAddress() != cntx.agent.getIpAddress()
@@ -58,7 +61,27 @@ public class OdinMobilityManager extends OdinApplication {
 					  && clientCurrentSignalMap.get(cntx.clientHwAddress) + 10 < cntx.value)) {
 				odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 				clientCurrentSignalMap.put(cntx.clientHwAddress, cntx.value);
+				clientLastHeardMap.put(cntx.clientHwAddress, System.currentTimeMillis());
+				return;
 			}
+			
+			if (clientLastHeardMap.get(cntx.clientHwAddress) == null) {
+				odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
+				clientCurrentSignalMap.put(cntx.clientHwAddress, cntx.value);
+				clientLastHeardMap.put(cntx.clientHwAddress, System.currentTimeMillis());
+				return;
+			}
+			
+			// No handoff was performed
+			long now = System.currentTimeMillis();
+			long lastHeard = now - clientLastHeardMap.get(cntx.clientHwAddress);
+	
+			if (lastHeard >= 200) {
+				odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
+				clientCurrentSignalMap.put(cntx.clientHwAddress, cntx.value);
+				clientLastHeardMap.put(cntx.clientHwAddress, System.currentTimeMillis());
+			}
+				
 		}
 	}
 }
