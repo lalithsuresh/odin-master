@@ -7,7 +7,7 @@ import net.floodlightcontroller.util.MACAddress;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
-public class OdinClientManagerResource extends ServerResource {
+public class ClientManagerResource extends ServerResource {
 
 	@Get("json")
     public Map<MACAddress, OdinClient> retreive() {

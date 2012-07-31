@@ -5,7 +5,7 @@ import java.util.Map;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
-public class OdinAgentManagerResource extends ServerResource {
+public class AgentManagerResource extends ServerResource {
 
 	@Get("json")
     public Map<InetAddress,IOdinAgent> retreive() {
