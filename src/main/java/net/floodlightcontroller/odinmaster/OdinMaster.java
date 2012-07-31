@@ -96,9 +96,25 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			// to it.
 			pushSubscriptionListToAgent(agentManager.getOdinAgents().get(odinAgentAddr));			
 
-			// Reclaim idle lvaps
+			// Reclaim idle lvaps and also attach flows to lvaps
 			for (OdinClient client: agentManager.getOdinAgents().get(odinAgentAddr).getLvapsLocal()) {
 				executor.schedule(new IdleLvapReclaimTask(client), idleLvapTimeout, TimeUnit.SECONDS);
+				
+				// Assign flow tables
+				if (!client.getIpAddress().getHostAddress().equals("0.0.0.0")) {
+					
+					// Obtain reference to client entity from clientManager, because agent.getLvapsLocal()
+					// returns a separate copy of the client objects.
+					OdinClient trackedClient = clientManager.getClients().get(client.getMacAddress());
+					trackedClient.setOFMessageList(lvapManager.getDefaultOFModList(client.getIpAddress()));
+					
+					// Push flow messages associated with the client
+        			try {
+        				trackedClient.getOdinAgent().getSwitch().write(trackedClient.getOFMessageList(), null);
+        			} catch (IOException e) {
+        				log.error("Failed to update switch's flow tables " + trackedClient.getOdinAgent().getSwitch());
+        			}
+				}
 			}
 		}
 
