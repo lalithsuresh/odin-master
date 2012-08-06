@@ -32,6 +32,7 @@ import net.floodlightcontroller.odinmaster.LvapManagerImpl;
 import net.floodlightcontroller.odinmaster.OdinAgentFactory;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.odinmaster.OdinMaster;
+import net.floodlightcontroller.odinmaster.OdinMobilityManager;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
@@ -123,6 +124,7 @@ public class OdinTest {
         agentManager.setFloodlightProvider(mockFloodlightProvider);
     }
     
+    /************* Master Tests ******************/
 
     /**
      * Make sure the client tracker doesn't duplicate
@@ -987,5 +989,124 @@ public class OdinTest {
     	private void callback2(OdinEventSubscription oes, NotificationCallbackContext cntx){
     		counter2 += 1;
     	}
+    }
+    
+    /************* Mobility Manager Tests ******************/
+    
+    private void triggerSingleEvent (MACAddress clientMacAddr, InetAddress agentAddr, long id, long value) {
+    	// The app's subscription would be id 1
+    	Map<Long, Long> subscriptionIds = new HashMap<Long, Long>();
+    	subscriptionIds.put(id, value);
+    	odinMaster.receivePublish(clientMacAddr, agentAddr, subscriptionIds);    	
+    }
+    
+    /**
+     * - The client should always be assigned to the agent where it has
+     *   the highest receiver signal strength
+     * - The client should never be re-assigned within the hysteresis
+     *   interval
+     * - A client that has left the range of the network and re-appears
+     *   at another end must be immediately re-assigned wherever.
+     */
+    @Test   
+    public void testMobilityManagerTwoAps() throws Exception {
+    	OdinMobilityManager app = new OdinMobilityManager(1000, 2000, 10);
+    	app.setOdinInterface(odinMaster);
+    	app.run(); // This isn't really a thread, but sets up callbacks
+
+    	String ipAddress1 = "172.17.2.161";
+    	String ipAddress2 = "172.17.2.162";
+    	InetAddress agentAddr1 = InetAddress.getByName(ipAddress1);
+    	InetAddress agentAddr2 = InetAddress.getByName(ipAddress2);
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	agentManager.setAgentTimeout(3000);
+    	
+    	// Add an agent with no clients associated
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	addAgentWithMockSwitch(ipAddress2, 12345);
+    	
+    	// Add a client at agent1
+    	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
+    	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 200);
+    	assertEquals(clientManager.getClients().size(), 1);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertNotNull(clientManager.getClients().get(clientMacAddr1).getOdinAgent());
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);    	
+
+    	// We should be within the hysteresis period now, so if we receive an event at
+    	// agent 2, there shouldn't be a handoff
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	
+    	// Sleep enough to get past the hysteresis period
+    	Thread.sleep(1001);
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	
+    	// Shouldn't happen because the signal strength isn't higher than
+    	// the current one
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	
+    	// Should now switch
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 211);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	
+    	// Now receive a trigger at the first AP, within current hysteresis cycle.
+    	// There should be no handoff.
+    	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 220);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	
+    	// Now reduce the signal strengtha t AP1, and follow it
+    	// with a trigger at AP2. Still no handoff due to hysteresis.
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);    	
+    	
+    	// Sleep enough to get past the hysteresis period
+    	Thread.sleep(1001);
+    	
+    	// Now repeat the last sequence, client should be handed
+    	// off back to AP1.
+      	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	
+    	// Now let the client go out of range of the network (exceed idle threshold)
+    	Thread.sleep(2001);
+    	
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 190);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	odinMaster.receivePing(agentAddr1);
+    	
+    	// Now let the current agent die out, giving the client a null agent
+    	Thread.sleep(2001);
+    	odinMaster.receivePing(agentAddr1);
+    	Thread.sleep(2001);
+
+    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	
+    	// Whoever hears the client should now be assigned
+    	// the client.
+    	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 160);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	
+    	// Let the other agent come back immediately, we need to wait
+    	// at least for the hysteresis period for the client to get
+    	// re-assigned. So it should be a no-op
+    	odinMaster.receivePing(agentAddr2);
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	
+    	// Wait past hysteresis period, and now retry
+    	Thread.sleep(1001);
+    	odinMaster.receivePing(agentAddr2);
+    	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
     }
 }

@@ -119,7 +119,7 @@ public class AgentManager {
             		
             		// This TimerTask checks the lastHeard value
             		// of the agent in order to handle failure detection
-            		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, agentTimeout);
+            		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, agentTimeout/2);
             		
     				return true;
     			}
