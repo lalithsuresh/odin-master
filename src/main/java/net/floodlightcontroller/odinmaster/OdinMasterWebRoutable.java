@@ -16,7 +16,8 @@ public class OdinMasterWebRoutable implements RestletRoutable {
 	@Override
 	public Restlet getRestlet(Context context) {
 		Router router = new Router(context);
-		router.attach("/clients/json", ClientManagerResource.class);
+		router.attach("/clients/all/json", AllClientsResource.class);
+		router.attach("/clients/connected/json", ConnectedClientsResource.class);
 		router.attach("/agents/json", AgentManagerResource.class);
 		router.attach("/handoff/json", LvapHandoffResource.class);
 		return router;
