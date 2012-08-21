@@ -82,7 +82,7 @@ public class OdinMobilityManager extends OdinApplication {
 		MobilityStats stats = clientMap.get(cntx.clientHwAddress);
 		
 		// If client hasn't been assigned an agent, do so
-		if (client.getOdinAgent() == null) {
+		if (client.getLvap().getAgent() == null) {
 			odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 			updateStatsWithReassignment (stats, cntx.value, currentTimestamp); 
 			return;
@@ -97,7 +97,7 @@ public class OdinMobilityManager extends OdinApplication {
 		
 		// If this notification is from the agent that's hosting the client's LVAP. update MobilityStats.
 		// Else, check if we should do a handoff.
-		if (client.getOdinAgent().getIpAddress().equals(cntx.agent.getIpAddress())) {
+		if (client.getLvap().getAgent().getIpAddress().equals(cntx.agent.getIpAddress())) {
 			stats.signalStrength = cntx.value;
 			stats.lastHeard = currentTimestamp;
 		}

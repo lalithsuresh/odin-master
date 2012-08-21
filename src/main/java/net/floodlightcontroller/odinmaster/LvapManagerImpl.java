@@ -19,24 +19,29 @@ import net.floodlightcontroller.util.MACAddress;
 public class LvapManagerImpl implements ILvapManager{
 	
 	private final String DEFAULT_SSID = "odin";
+	private final byte[] oui = {(byte) 0x00, (byte) 0x1b, (byte) 0xb3};
 	
 	@Override
-	public OdinClient getLvapWithNullIp(final MACAddress clientHwAddress) {
+	public OdinClient assignLvapWithNullIp(final MACAddress clientHwAddress) {
 
 		// Generate random BSSID
-		// FIXME: This code can seriously be improved :)
+		// FIXME: We need less randomness in the least significant
+		// three bytes.
 		byte[] bssidBytes = clientHwAddress.toBytes();
-		bssidBytes[0] = (byte) 0xe8;
-		bssidBytes[1] = (byte) 0x1b;
-		bssidBytes[2] = (byte) 0xb1;
+		bssidBytes[0] = oui[0];
+		bssidBytes[1] = oui[1];
+		bssidBytes[2] = oui[2];
 		MACAddress bssid = MACAddress.valueOf(bssidBytes);
+		ArrayList<String> ssids = new ArrayList<String> ();
+		ssids.add(DEFAULT_SSID);
+		Lvap lvap = new Lvap (bssid, ssids);
 				
 		try {
-			return new OdinClient(clientHwAddress, InetAddress.getByName("0.0.0.0"), bssid, DEFAULT_SSID);
+			return new OdinClient(clientHwAddress, InetAddress.getByName("0.0.0.0"), lvap);
 		} catch (UnknownHostException e) {
 			// This should never happen
 			e.printStackTrace();
-			return new OdinClient(clientHwAddress, null, bssid, DEFAULT_SSID);
+			return new OdinClient(clientHwAddress, null, lvap);
 		}
 	}
 	

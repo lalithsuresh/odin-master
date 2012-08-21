@@ -54,7 +54,7 @@ public class AgentManager {
 	 * Get the list of agents being tracked
 	 * @return agentMap
 	 */
-	public ConcurrentHashMap<InetAddress, IOdinAgent> getOdinAgents() {
+	public ConcurrentHashMap<InetAddress, IOdinAgent> getAgents() {
 		return agentMap;
 	}
 	
@@ -96,11 +96,11 @@ public class AgentManager {
             			
             			if (clientManager.getClients().get(client.getMacAddress()) == null){
             				clientManager.addClient(client.getMacAddress(), client.getIpAddress(),
-            									client.getLvapBssid() , client.getLvapSsid());
+            									client.getLvap());
             			}	
             			
-            			if (clientManager.getClients().get(client.getMacAddress()).getOdinAgent() == null) {
-            				clientManager.getClients().get(client.getMacAddress()).setOdinAgent(oa);
+            			if (clientManager.getClients().get(client.getMacAddress()).getLvap().getAgent() == null) {
+            				clientManager.getClients().get(client.getMacAddress()).getLvap().setAgent(oa);
             			}
             			else {
                 			// Race condition: 
@@ -151,7 +151,7 @@ public class AgentManager {
 				// TODO: There should be a way to lock the master
 				// during such operations	
 				for (OdinClient oc: agent.getLvapsLocal()) {
-					clientManager.getClients().get(oc.getMacAddress()).setOdinAgent(null);
+					clientManager.getClients().get(oc.getMacAddress()).getLvap().setAgent(null);
 				}
 				
 				// Agent should now be cleared out

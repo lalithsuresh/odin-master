@@ -18,7 +18,7 @@ public interface ILvapManager {
 	 * @param clientHwAddress
 	 * @return an OdinClient
 	 */
-	public OdinClient getLvapWithNullIp(MACAddress clientHwAddress);
+	public OdinClient assignLvapWithNullIp(MACAddress clientHwAddress);
 	
 	
 	/**

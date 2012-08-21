@@ -13,49 +13,21 @@ import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinClientSerializer.class)
 public class OdinClient implements Comparable {
-	private MACAddress hwAddress;
+	private final MACAddress hwAddress;
 	private InetAddress ipAddress;
-	private MACAddress lvapBssid;
-	private String lvapEssid;
-	private IOdinAgent odinAgent;
-	private List<OFMessage> msgList = new ArrayList<OFMessage>();
+	private Lvap lvap;
+	
 
 	// NOTE: Will need to add security token and temporal keys here later.
 	// So make sure to pass OdinClient through interfaces of other classes
 	// as opposed to the 4-LVAP properties now. 
 	
-	public OdinClient (MACAddress hwAddress, InetAddress ipAddress, MACAddress vapBssid, String vapEssid) {
+	public OdinClient (MACAddress hwAddress, InetAddress ipAddress, Lvap lvap) {
 		this.hwAddress = hwAddress;
 		this.ipAddress = ipAddress;
-		this.lvapBssid = vapBssid;
-		this.lvapEssid = vapEssid;
-		this.odinAgent = null;
+		this.lvap = lvap;
 	}
-	
-	
-	/**
-	 * Get the OdinAgent that this client is
-	 * currently assigned to. If null, implies
-	 * that the client is unassigned.
-	 * 
-	 * @return OdinAgent that the client is assigned to.
-	 *         null if not assigned.
-	 */
-	public IOdinAgent getOdinAgent() {
-		return odinAgent;
-	}
-	
-	
-	/**
-	 * Set OdinAgent property for the client. Should not be
-	 * null if the client is assigned to an agent.
-	 * 
-	 * @param newAgent agent to assign client to
-	 */
-	public void setOdinAgent (IOdinAgent newAgent) {
-		odinAgent = newAgent;
-	}
-	
+		
 	
 	/**
 	 * STA's MAC address. We assume one per client here.
@@ -67,17 +39,7 @@ public class OdinClient implements Comparable {
 		return this.hwAddress;
 	}
 	
-	
-	/**
-	 * Set the client's MAC address.
-	 * 
-	 * @param addr
-	 */
-	public void setMacAddress(MACAddress addr) {
-		this.hwAddress = addr;
-	}
-	
-	
+		
 	/**
 	 * Get the clien'ts IP address.
 	 * @return
@@ -97,58 +59,19 @@ public class OdinClient implements Comparable {
 	
 	
 	/**
-	 * Get the LVAP-BSSID for this client
-	 * 
-	 * @return MACAddress representing the LVAP-BSSID for the client
+	 * Get the client's lvap object
+	 * @return lvap
 	 */
-	public MACAddress getLvapBssid() {
-		return this.lvapBssid;
+	public Lvap getLvap() {
+		return lvap;
 	}
 	
 	
 	/**
-	 * Set the LVAP-BSSID for the client
-	 * @param addr MACAddress representing LVAP-BSSID
+	 * Set the client's lvap
 	 */
-	public void setLvapBssid(MACAddress addr) {
-		this.lvapBssid = addr;
-	}
-	
-	
-	/**
-	 * Get the LVAP-SSID for the client
-	 * @return client's ssid
-	 */
-	public String getLvapSsid() {
-		return this.lvapEssid;
-	}
-	
-	
-	/**
-	 * Set the LVAP-SSID for the client
-	 * @param ssid
-	 */
-	public void setLvapSsid(String ssid) {
-		this.lvapEssid = ssid;
-	}
-	
-	
-	/**
-	 * Get the OFMod list for the client
-	 * @return list of OFMod messages 
-	 */
-	public List<OFMessage> getOFMessageList() {
-		return this.msgList;
-	}
-	
-	
-	/**
-	 * Set the OFMod list for the client
-	 * 
-	 * @param List of OFMod messages
-	 */
-	public void setOFMessageList(List<OFMessage> list) {
-		this.msgList = list;
+	public void setLvap() {
+		this.lvap = lvap;
 	}
 	
 	

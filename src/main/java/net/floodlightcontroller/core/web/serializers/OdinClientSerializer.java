@@ -21,9 +21,9 @@ public class OdinClientSerializer extends JsonSerializer<OdinClient> {
 		jgen.writeStringField("macAddress", client.getMacAddress().toString());
 		String clientIpAddr = client.getIpAddress().getHostAddress();
 		jgen.writeStringField("ipAddress", clientIpAddr);
-		jgen.writeStringField("lvapBssid", client.getLvapBssid().toString());
-		jgen.writeStringField("lvapSsid", client.getLvapSsid());
-		IOdinAgent agent = client.getOdinAgent();
+		jgen.writeStringField("lvapBssid", client.getLvap().getBssid().toString());
+		jgen.writeStringField("lvapSsid", client.getLvap().getSsids().get(0)); // FIXME: assumes single SSID
+		IOdinAgent agent = client.getLvap().getAgent();
 		if (agent != null) {
 			String agentIpAddr = agent.getIpAddress().getHostAddress();
 			jgen.writeStringField("agent", agentIpAddr);

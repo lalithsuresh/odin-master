@@ -28,6 +28,7 @@ import net.floodlightcontroller.odinmaster.OdinEventSubscription.Relation;
 import net.floodlightcontroller.odinmaster.AgentManager;
 import net.floodlightcontroller.odinmaster.ClientManager;
 import net.floodlightcontroller.odinmaster.ILvapManager;
+import net.floodlightcontroller.odinmaster.Lvap;
 import net.floodlightcontroller.odinmaster.LvapManagerImpl;
 import net.floodlightcontroller.odinmaster.OdinAgentFactory;
 import net.floodlightcontroller.odinmaster.OdinClient;
@@ -62,11 +63,11 @@ public class OdinTest {
      * @throws Exception
      */
     private void addAgentWithMockSwitch (String ipAddress, int port) throws Exception {
-        int size = agentManager.getOdinAgents().size();
+        int size = agentManager.getAgents().size();
     	
         agentManager.receivePing(InetAddress.getByName(ipAddress));
         
-    	assertEquals(agentManager.getOdinAgents().size(), size);
+    	assertEquals(agentManager.getAgents().size(), size);
 
         long id = switchId++;
         // Now register a switch
@@ -88,9 +89,16 @@ public class OdinTest {
         // Let's try again
         agentManager.receivePing(InetAddress.getByName(ipAddress));
         
-        assertEquals(agentManager.getOdinAgents().size(),size + 1);
+        assertEquals(agentManager.getAgents().size(),size + 1);
         
-        assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress)).getSwitch(), sw1);
+        assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress)).getSwitch(), sw1);
+    }
+    
+    private void addClientToClientManagerSingleSsid (MACAddress sta, InetAddress inetAddr, MACAddress lvapBssid, String ssid) {
+    	ArrayList<String> ssidList = new ArrayList<String> ();
+    	ssidList.add(ssid);
+    	Lvap lvap = new Lvap (lvapBssid, ssidList);
+    	clientManager.addClient(sta, inetAddr, lvap);
     }
     
     @Before
@@ -135,13 +143,13 @@ public class OdinTest {
     @Test
     public void testClientTracker() throws Exception {
     	assertEquals(clientManager.getClients().size(),0);
-    	clientManager.addClient(MACAddress.valueOf("00:00:00:00:00:01"),
+    	addClientToClientManagerSingleSsid(MACAddress.valueOf("00:00:00:00:00:01"),
 								 InetAddress.getByName("172.17.1.1"),
 								 MACAddress.valueOf("00:00:00:00:00:01"),
 								 "g9");
 		
 		assertEquals(clientManager.getClients().size(),1);
-		clientManager.addClient(MACAddress.valueOf("00:00:00:00:00:01"),
+		addClientToClientManagerSingleSsid(MACAddress.valueOf("00:00:00:00:00:01"),
 								 InetAddress.getByName("172.17.1.2"),
 								 MACAddress.valueOf("00:00:00:00:00:02"),
 								 "g9");
@@ -174,7 +182,7 @@ public class OdinTest {
         
         // We haven't registered a switch yet, so this should
         // still be zero
-        assertEquals(agentManager.getOdinAgents().size(),0);
+        assertEquals(agentManager.getAgents().size(),0);
         
         // Now register a switch
     	IOFSwitch sw1;
@@ -194,7 +202,7 @@ public class OdinTest {
         // Let's try again
         agentManager.receivePing(InetAddress.getByName("127.0.0.1"));
         
-        assertEquals(agentManager.getOdinAgents().size(),1);
+        assertEquals(agentManager.getAgents().size(),1);
     }
     
     
@@ -219,68 +227,68 @@ public class OdinTest {
     	// 1. Things shouldn't explode when this is called
     	odinMaster.receiveProbe(null, null);
     	
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
     	// 2. Client should be added
     	assertEquals(clientManager.getClients().size(), 1);    	
-    	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// 3, 4. now try again. Client should be assigned an AP
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// 5. another probe from the same AP/client should
     	// 	not be handed off, and should not feature
     	// 	in the client list a second time
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// 6. probe scan from new AP. client should not be
     	// handed off to the new one, nor should a new
     	// client be registered.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress2), clientMacAddr1);
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// 7. New client performs a scan at AP1
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr2);
     	assertEquals(clientManager.getClients().size(), 2);
     	
     	// 8. Add client2
-    	clientManager.addClient(clientMacAddr2, InetAddress.getByName("172.17.2.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr2, InetAddress.getByName("172.17.2.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
     	assertEquals(clientManager.getClients().size(), 2);
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent(), null);
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent(), null);
     	
     	// 9. Receive probe from both APs one after the other.
     	// Client should be assigned to the first AP
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr2);
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress2), clientMacAddr2);
     	assertEquals(clientManager.getClients().size(), 2);
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	
     	// 10. Receive probe from an AP which is yet to register,
     	// for an unauthorised client which is scanning for the first time.
     	// This can occur as a race condition.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), clientMacAddr3);
-    	assertNull(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress3)));
+    	assertNull(agentManager.getAgents().get(InetAddress.getByName(ipAddress3)));
     	assertEquals(clientManager.getClients().size(), 2);
     	
     	// 11. Add client3
-    	clientManager.addClient(clientMacAddr3, InetAddress.getByName("172.17.2.53"), MACAddress.valueOf("00:00:00:00:11:13"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr3, InetAddress.getByName("172.17.2.53"), MACAddress.valueOf("00:00:00:00:11:13"), "odin");
     	assertEquals(clientManager.getClients().size(), 3);
-    	assertEquals(clientManager.getClients().get(clientMacAddr3).getOdinAgent(), null);
+    	assertEquals(clientManager.getClients().get(clientMacAddr3).getLvap().getAgent(), null);
 
     	// 10. Receive probe from an AP which is yet to register,
     	// for an authorised client which is scanning for the first time.
     	// This can occur as a race condition.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), clientMacAddr3);
-    	assertNull(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress3)));
+    	assertNull(agentManager.getAgents().get(InetAddress.getByName(ipAddress3)));
     	assertEquals(clientManager.getClients().size(), 3);
     	
     	// 11. Now add agent3
@@ -290,7 +298,7 @@ public class OdinTest {
     	// for an authorised client which is scanning for the first time.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), clientMacAddr3);
     	assertEquals(clientManager.getClients().size(), 3);
-    	assertEquals(clientManager.getClients().get(clientMacAddr3).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress3));
+    	assertEquals(clientManager.getClients().get(clientMacAddr3).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress3));
     	
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), null);
     }
@@ -316,37 +324,37 @@ public class OdinTest {
     	odinMaster.handoffClientToAp(null, null);
         
     	
-    	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
   	
     	addAgentWithMockSwitch(ipAddress1, 12345);
     	addAgentWithMockSwitch(ipAddress2, 12345);
     	addAgentWithMockSwitch(ipAddress3, 12345);
     	
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertNull(clientManager.getClients().get(clientMacAddr1).getOdinAgent());
-    	assertEquals(agentManager.getOdinAgents().size(), 3);
+    	assertNull(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent());
+    	assertEquals(agentManager.getAgents().size(), 3);
 
     	///// Sane cases /////
     	
     	// Handoff client for the first time to AP that exists
     	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Handoff client to the same AP, nothing should change
     	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Handoff client to AP2 that exists
     	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress2));
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     	
     	// Handoff client to AP3 that exists
     	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress3));
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress3));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress3));
     	
     	// And back to AP1
     	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	
     	///// Less sane cases /////
@@ -365,32 +373,32 @@ public class OdinTest {
     	
     	
     	// now authorise the client
-    	clientManager.addClient(clientMacAddr2, InetAddress.getByName("172.17.2.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr2, InetAddress.getByName("172.17.2.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
-    	assertNull(clientManager.getClients().get(clientMacAddr2).getOdinAgent());
+    	assertNull(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent());
     	
     	// Handoff authorised client to non-existent agent,
     	// it should still not have an LVAP
     	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress4));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
-    	assertNull(clientManager.getClients().get(clientMacAddr2).getOdinAgent());
+    	assertNull(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent());
     	
     	// Now handoff to an existing agent
     	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress1));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Now handoff to a non-existing agent, the client's
     	// LVAP should not have changed
     	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress4));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Now handoff to a null agent, the client's agent
     	// assignment shouldn't have changed
     	odinMaster.handoffClientToAp(clientMacAddr2, null);
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     }
 
 
@@ -410,51 +418,51 @@ public class OdinTest {
     	
     	// Add an agent and associate a client to it
     	addAgentWithMockSwitch(ipAddress1, 12345);
-    	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
     	// There should be an agent, and a client recorded at the master
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	assertEquals(clientManager.getClients().size(), 1);
 
     	Thread.sleep(1500);
     	
     	// Agent should have been removed by now, and the associated
     	// client should have no agent assigned to it
-    	assertEquals(agentManager.getOdinAgents().size(), 0);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(agentManager.getAgents().size(), 0);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Now ping again to revive the agent
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	
        	// Agent should be setup again
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
  
     	// Client should remain unassigned
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Time it out again
     	Thread.sleep(1500);
-    	assertEquals(agentManager.getOdinAgents().size(), 0);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(agentManager.getAgents().size(), 0);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// There is no instance for the agent at the master, but we
     	// mock a client scan that is forwarded by the agent to the
     	// controller. The client shouldn't be assigned to the agent
     	// yet.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
 
     	// Now let the agent ping again. Master will track it, but client
     	// will still remain unassigned
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(agentManager.getAgents().size(), 1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Now mock a client probe. Client should be assigned now.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
 
     	
     	// The following tests the LVAP syncing mechanism
@@ -462,7 +470,10 @@ public class OdinTest {
     	// Add another agent that already is hosting an LVAP. Make it join.
     	
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
-    	OdinClient oc = new OdinClient(clientMacAddr2, InetAddress.getByName("172.17.1.52"), MACAddress.valueOf("00:00:00:00:11:12"), "odin");
+    	ArrayList<String> ssidList = new ArrayList<String> ();
+    	ssidList.add("odin");
+    	Lvap lvap = new Lvap (MACAddress.valueOf("00:00:00:00:11:12"), ssidList);
+    	OdinClient oc = new OdinClient(clientMacAddr2, InetAddress.getByName("172.17.1.52"), lvap);
     	lvapList.add(oc);
         OdinAgentFactory.setOdinAgentType("MockOdinAgent");
     	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
@@ -470,8 +481,8 @@ public class OdinTest {
     	addAgentWithMockSwitch(ipAddress2, 12345);
     	
     	assertEquals(clientManager.getClients().size(), 2);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
-    	assertEquals(clientManager.getClients().get(clientMacAddr2).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
+    	assertEquals(agentManager.getAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
@@ -495,15 +506,18 @@ public class OdinTest {
  
     	// Add an agent and associate a client to it
     	addAgentWithMockSwitch(ipAddress1, 12345);
-    	clientManager.addClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
+    	assertEquals(agentManager.getAgents().size(), 1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
 
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
-    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	ArrayList<String> ssidList = new ArrayList<String> ();
+    	ssidList.add("odin");
+    	Lvap lvap = new Lvap (MACAddress.valueOf("00:00:00:00:11:11"), ssidList);
+    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), lvap);
     	lvapList.add(oc);
         OdinAgentFactory.setOdinAgentType("MockOdinAgent");
     	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
@@ -511,8 +525,8 @@ public class OdinTest {
     	addAgentWithMockSwitch(ipAddress2, 12345);
     	odinMaster.receivePing(InetAddress.getByName(ipAddress2));
     	
-    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
-    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress2)).getLvapsRemote().contains(oc), false);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress2)).getLvapsRemote().contains(oc), false);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
@@ -533,27 +547,30 @@ public class OdinTest {
     	agentManager.setAgentTimeout(1000);
 
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
-    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+    	ArrayList<String> ssidList = new ArrayList<String> ();
+    	ssidList.add("odin");
+    	Lvap lvap = new Lvap (MACAddress.valueOf("00:00:00:00:11:11"), ssidList);
+    	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), lvap);
     	lvapList.add(oc);
         OdinAgentFactory.setOdinAgentType("MockOdinAgent");
     	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
     	
     	assertEquals(odinMaster.getClients().size(), 0);
-    	assertEquals(agentManager.getOdinAgents().size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	
     	addAgentWithMockSwitch(ipAddress1, 12345);
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
-    	assertEquals(agentManager.getOdinAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(agentManager.getAgents().size(), 1);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
     	assertEquals(odinMaster.getClients().size(), 1);
     	
     	// Time out the agent
     	Thread.sleep(2000);
     	
-    	assertEquals(agentManager.getOdinAgents().size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	assertEquals(odinMaster.getClients().size(), 1);
-    	assertEquals(odinMaster.getClients().get(clientMacAddr1).getOdinAgent(), null);
+    	assertEquals(odinMaster.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
@@ -869,7 +886,7 @@ public class OdinTest {
     	Class target = Class.forName("net.floodlightcontroller.odinmaster.LvapManagerImpl");
     
     	Class[] paramTypes = {MACAddress.class};
-    	Method method = target.getDeclaredMethod("getLvapWithNullIp", paramTypes);
+    	Method method = target.getDeclaredMethod("assignLvapWithNullIp", paramTypes);
     	method.setAccessible(true);
  
     	Object[] parameters = { MACAddress.valueOf("00:00:00:00:00:01") };
@@ -881,19 +898,19 @@ public class OdinTest {
     	OdinClient oc2 = (OdinClient) method.invoke(lvapManager, parameters);
     	
     	// Different clients, different details
-    	assertTrue( !oc1.getLvapBssid().equals(oc2.getLvapBssid()) );
+    	assertTrue( !oc1.getLvap().getBssid().equals(oc2.getLvap().getBssid()) );
     	assertTrue( oc1.getIpAddress().getHostAddress().equals("0.0.0.0") );
     	assertTrue( oc2.getIpAddress().getHostAddress().equals("0.0.0.0") );
-    	assertTrue( oc1.getLvapSsid() == oc2.getLvapSsid() );
+    	assertTrue( oc1.getLvap().getSsids().get(0) == oc2.getLvap().getSsids().get(0) ); // FIXME: Assumes single SSID
     	assertTrue( oc1.getMacAddress() != oc2.getMacAddress() );
 
     	// Shouldn't be called, but still.
     	OdinClient oc3 = (OdinClient) method.invoke(lvapManager, parameters);
     	
-    	assertTrue( oc3.getLvapBssid().equals(oc2.getLvapBssid()) );
+    	assertTrue( oc3.getLvap().getBssid().equals(oc2.getLvap().getBssid()) );
     	assertTrue( oc3.getIpAddress().getHostAddress().equals("0.0.0.0") );
     	assertTrue( oc2.getIpAddress().getHostAddress().equals("0.0.0.0") );
-    	assertTrue( oc3.getLvapSsid() == oc2.getLvapSsid() );
+    	assertTrue( oc3.getLvap().getSsids().get(0) == oc2.getLvap().getSsids().get(0) ); // FIXME: Assumes single SSID
     	assertTrue( oc3.getMacAddress() == oc2.getMacAddress() );
     }
     
@@ -1029,15 +1046,15 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 200);
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
-    	assertNotNull(clientManager.getClients().get(clientMacAddr1).getOdinAgent());
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);    	
+    	assertEquals(agentManager.getAgents().size(), 2);
+    	assertNotNull(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent());
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);    	
 
     	// We should be within the hysteresis period now, so if we receive an event at
     	// agent 2, there shouldn't be a handoff
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Sleep enough to get past the hysteresis period
     	Thread.sleep(1001);
@@ -1045,26 +1062,26 @@ public class OdinTest {
     	
     	// Shouldn't happen because the signal strength isn't higher than
     	// the current one
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Should now switch
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 211);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now receive a trigger at the first AP, within current hysteresis cycle.
     	// There should be no handoff.
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 220);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now reduce the signal strengtha t AP1, and follow it
     	// with a trigger at AP2. Still no handoff due to hysteresis.
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);    	
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getAgents().size(), 2);    	
     	
     	// Sleep enough to get past the hysteresis period
     	Thread.sleep(1001);
@@ -1073,15 +1090,15 @@ public class OdinTest {
     	// off back to AP1.
       	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now let the client go out of range of the network (exceed idle threshold)
     	Thread.sleep(2001);
     	
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 190);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getOdinAgents().size(), 2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	odinMaster.receivePing(agentAddr1);
     	
     	// Now let the current agent die out, giving the client a null agent
@@ -1089,24 +1106,24 @@ public class OdinTest {
     	odinMaster.receivePing(agentAddr1);
     	Thread.sleep(2001);
 
-    	assertEquals(agentManager.getOdinAgents().size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	
     	// Whoever hears the client should now be assigned
     	// the client.
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 160);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
     	
     	// Let the other agent come back immediately, we need to wait
     	// at least for the hysteresis period for the client to get
     	// re-assigned. So it should be a no-op
     	odinMaster.receivePing(agentAddr2);
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
     	
     	// Wait past hysteresis period, and now retry
     	Thread.sleep(1001);
     	odinMaster.receivePing(agentAddr2);
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
-    	assertEquals(clientManager.getClients().get(clientMacAddr1).getOdinAgent().getIpAddress(), agentAddr2);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
     }
 }

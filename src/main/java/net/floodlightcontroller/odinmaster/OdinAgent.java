@@ -106,11 +106,14 @@ public class OdinAgent implements IOdinAgent {
 				break;
 			String properties[] = entry.split(" ");
 			OdinClient oc;
+			Lvap lvap;
 			try {
+				ArrayList<String> ssidList = new ArrayList<String>();
+				ssidList.add (properties[2]); // FIXME: assuming single ssid
+				lvap =  new Lvap (MACAddress.valueOf(properties[1]), ssidList);
 				oc = new OdinClient(MACAddress.valueOf(properties[0]),
-						InetAddress.getByName(properties[3]), MACAddress
-								.valueOf(properties[1]), properties[2]);
-				oc.setOdinAgent(this);
+						InetAddress.getByName(properties[3]), lvap);
+				lvap.setAgent(this);
 				clients.add(oc);
 
 			} catch (UnknownHostException e) {
@@ -284,7 +287,7 @@ public class OdinAgent implements IOdinAgent {
 	public void addLvap(OdinClient oc) {
 		invokeWriteHandler(WRITE_HANDLER_ADD_VAP, oc.getMacAddress().toString()
 				+ " " + oc.getIpAddress().getHostAddress() + " "
-				+ oc.getLvapBssid().toString() + " " + oc.getLvapSsid());
+				+ oc.getLvap().getBssid().toString() + " " + oc.getLvap().getSsids().get(0)); // FIXME: assuming single ssid
 		clientList.add(oc);
 	}
 
@@ -300,7 +303,7 @@ public class OdinAgent implements IOdinAgent {
 	public void updateLvap(OdinClient oc) {
 		invokeWriteHandler(WRITE_HANDLER_SET_VAP, oc.getMacAddress().toString()
 				+ " " + oc.getIpAddress().getHostAddress() + " "
-				+ oc.getLvapBssid().toString() + " " + oc.getLvapSsid());
+				+ oc.getLvap().getBssid().toString() + " " + oc.getLvap().getSsids().get(0)); // FIXME: assuming single ssid
 	}
 
 	

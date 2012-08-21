@@ -1,6 +1,7 @@
 package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -19,8 +20,8 @@ public class ClientManager {
 	 * @param vapBssid Client specific VAP bssid
 	 * @param vapEssid Client specific VAP essid
 	 */
-	public void addClient (final MACAddress clientHwAddress, final InetAddress ipv4Address, final MACAddress vapBssid, final String vapEssid) {
-		odinClientMap.put(clientHwAddress, new OdinClient (clientHwAddress, ipv4Address, vapBssid, vapEssid));
+	public void addClient (final MACAddress clientHwAddress, final InetAddress ipv4Address, final Lvap lvap) {
+		odinClientMap.put(clientHwAddress, new OdinClient (clientHwAddress, ipv4Address, lvap));
 	}
 	
 	
@@ -59,7 +60,7 @@ public class ClientManager {
 	 * Get the client Map from the manager
 	 * @return client map
 	 */
-	public ConcurrentMap<MACAddress, OdinClient> getClients () {
+	public Map<MACAddress, OdinClient> getClients () {
 		return odinClientMap;
 	}
 }
