@@ -3,6 +3,7 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -25,7 +26,7 @@ public interface IOdinAgent {
 	 * Get a list of VAPs that the agent is hosting
 	 * @return a list of OdinClient entities on the agent
 	 */
-	public ConcurrentSkipListSet<OdinClient> getLvapsRemote ();
+	public Set<OdinClient> getLvapsRemote ();
 	
 	/**
 	 * Return a list of LVAPs that the master knows this

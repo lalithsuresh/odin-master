@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.codehaus.jackson.annotate.JsonValue;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -75,8 +76,7 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Set the lastHeard timestamp of a client
 	 * 
-	 * @param t
-	 *            timestamp to update lastHeard value
+	 * @param t  timestamp to update lastHeard value
 	 */
 	public void setLastHeard(long t) {
 		this.lastHeard = t;
@@ -91,7 +91,7 @@ public class OdinAgent implements IOdinAgent {
 	 * 
 	 * @return a list of OdinClient entities on the agent
 	 */
-	public ConcurrentSkipListSet<OdinClient> getLvapsRemote() {
+	public Set<OdinClient> getLvapsRemote() {
 		ConcurrentSkipListSet<OdinClient> clients = new ConcurrentSkipListSet<OdinClient>();
 		String handle = invokeReadHandler(READ_HANDLER_TABLE);
 
@@ -102,20 +102,31 @@ public class OdinAgent implements IOdinAgent {
 		String tableList[] = handle.split("\n");
 
 		for (String entry : tableList) {
+
 			if (entry.equals(""))
 				break;
+			
+			/* 
+			 * Every entry looks like this:
+			 * properties:  [0]       [1]         [2]         [3, 4, 5...]
+			 *           <sta_mac> <ipv4addr> <lvap bssid> <lvap ssid list>
+			 *
+			 */
 			String properties[] = entry.split(" ");
 			OdinClient oc;
 			Lvap lvap;
 			try {
+				// First, get the list of all the SSIDs
 				ArrayList<String> ssidList = new ArrayList<String>();
-				ssidList.add (properties[2]); // FIXME: assuming single ssid
-				lvap =  new Lvap (MACAddress.valueOf(properties[1]), ssidList);
+				for (int i = 3; i < properties.length; i++) {
+					ssidList.add (properties[i]);
+				}
+				lvap =  new Lvap (MACAddress.valueOf(properties[2]), ssidList);
 				oc = new OdinClient(MACAddress.valueOf(properties[0]),
-						InetAddress.getByName(properties[3]), lvap);
+						InetAddress.getByName(properties[1]), lvap);
 				lvap.setAgent(this);
 				clients.add(oc);
-
+				
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			}
@@ -285,9 +296,15 @@ public class OdinAgent implements IOdinAgent {
 	 *            The STA specific SSID
 	 */
 	public void addLvap(OdinClient oc) {
+		String ssidList = "";
+		
+		for (String ssid: oc.getLvap().getSsids()) {
+			ssidList += " " + ssid;
+		}
+		
 		invokeWriteHandler(WRITE_HANDLER_ADD_VAP, oc.getMacAddress().toString()
 				+ " " + oc.getIpAddress().getHostAddress() + " "
-				+ oc.getLvap().getBssid().toString() + " " + oc.getLvap().getSsids().get(0)); // FIXME: assuming single ssid
+				+ oc.getLvap().getBssid().toString() + ssidList);
 		clientList.add(oc);
 	}
 
@@ -301,9 +318,15 @@ public class OdinAgent implements IOdinAgent {
 	 * @param staEssid The STA specific SSID
 	 */
 	public void updateLvap(OdinClient oc) {
+		String ssidList = "";
+		
+		for (String ssid: oc.getLvap().getSsids()) {
+			ssidList += " " + ssid;
+		}
+		
 		invokeWriteHandler(WRITE_HANDLER_SET_VAP, oc.getMacAddress().toString()
 				+ " " + oc.getIpAddress().getHostAddress() + " "
-				+ oc.getLvap().getBssid().toString() + " " + oc.getLvap().getSsids().get(0)); // FIXME: assuming single ssid
+				+ oc.getLvap().getBssid().toString() + ssidList);
 	}
 
 	
