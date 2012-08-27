@@ -69,6 +69,11 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
 	private int idleLvapTimeout = 30; // Seconds
 
+	// some defaults
+	static private final String DEFAULT_AUTHFILE = "odin_authorisation";  
+	static private final String DEFAULT_SSID = "odin";
+	static private final int DEFAULT_PORT = 2819;
+	
 	public OdinMaster(){
 		clientManager = new ClientManager();
 		agentManager = new AgentManager(clientManager);
@@ -510,7 +515,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		// read config options
         Map<String, String> configOptions = context.getConfigParams(this);
         
-        String authFile = "odin_authorisation"; // default
+        String authFile = DEFAULT_AUTHFILE; // default
         String authFileConfig = configOptions.get("authFile");
         
         if (authFileConfig != null) {
@@ -551,19 +556,19 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         	}
         }
         
-        int port = 2819; // default
+        int port = DEFAULT_PORT;
         String portNum = configOptions.get("masterPort");
         if (portNum != null) {
             port = Integer.parseInt(portNum);
         }
         
+        String [] ssidList = {DEFAULT_SSID};        
         String ssidListStr = configOptions.get("ssidList");
         
-        if (ssidListStr == null) {
+        if (ssidListStr != null) {
+        	ssidList = ssidListStr.split(",");
         	log.info("Configuration file doesn't specify any SSIDs to load");
         }
-        
-        String [] ssidList = ssidListStr.split(",");
         
         for (String ssid: ssidList) {
         	lvapManager.addNetwork(ssid);
