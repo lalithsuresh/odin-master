@@ -145,7 +145,7 @@ public class OdinAgent implements IOdinAgent {
 	 * 
 	 * @return a list of OdinClient entities on the agent
 	 */
-	public ConcurrentSkipListSet<OdinClient> getLvapsLocal() {
+	public Set<OdinClient> getLvapsLocal() {
 		return clientList;
 	}
 
@@ -171,7 +171,6 @@ public class OdinAgent implements IOdinAgent {
 			String row[] = elem.split(" ");
 
 			if (row.length != RX_STAT_NUM_PROPERTIES + 1) {
-				System.err.println("Received malformed row: " + elem);
 				continue;
 			}
 
@@ -196,10 +195,8 @@ public class OdinAgent implements IOdinAgent {
 	 * setup/tear-down messages with every invocation of an agent. This will
 	 * also help speedup handoffs.
 	 * 
-	 * @param host
-	 *            Click based OdinAgent host
-	 * @param port
-	 *            Click based OdinAgent's control socket port
+	 * @param host Click based OdinAgent host
+	 * @param port Click based OdinAgent's control socket port
 	 * @return 0 on success, -1 otherwise
 	 */
 	public int init(InetAddress host) {
@@ -262,8 +259,7 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Set the IOFSwitch entity corresponding to this agent
 	 * 
-	 * @param sw
-	 *            the IOFSwitch entity for this agent
+	 * @param sw the IOFSwitch entity for this agent
 	 */
 	public void setSwitch(IOFSwitch sw) {
 		ofSwitch = sw;
@@ -273,10 +269,9 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Remove a virtual access point from the AP corresponding to this agent
 	 * 
-	 * @param staHwAddr
-	 *            The STA's ethernet address
+	 * @param staHwAddr The STA's ethernet address
 	 */
-	public void removeLvap(OdinClient oc) {
+	public void removeClientLvap(OdinClient oc) {
 		invokeWriteHandler(WRITE_HANDLER_REMOVE_VAP, oc.getMacAddress()
 				.toString());
 		clientList.remove(oc);
@@ -286,16 +281,11 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Add a virtual access point to the AP corresponding to this agent
 	 * 
-	 * @param staHwAddr
-	 *            The STA's ethernet address
-	 * @param staIpAddr
-	 *            The STA's IP address
-	 * @param vapBssid
-	 *            The STA specific BSSID
-	 * @param staEssid
-	 *            The STA specific SSID
+	 * @param oc OdinClient entity
 	 */
-	public void addLvap(OdinClient oc) {
+	public void addClientLvap(OdinClient oc) {
+		assert (oc.getLvap() != null);
+		
 		String ssidList = "";
 		
 		for (String ssid: oc.getLvap().getSsids()) {
@@ -312,12 +302,11 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Update a virtual access point with possibly new IP, BSSID, or SSID
 	 * 
-	 * @param staHwAddr The STA's ethernet address
-	 * @param staIpAddr The STA's IP address
-	 * @param vapBssid The STA specific BSSID
-	 * @param staEssid The STA specific SSID
+	 * @param oc OdinClient entity
 	 */
-	public void updateLvap(OdinClient oc) {
+	public void updateClientLvap(OdinClient oc) {
+		assert (oc.getLvap() != null);
+		
 		String ssidList = "";
 		
 		for (String ssid: oc.getLvap().getSsids()) {
@@ -334,8 +323,7 @@ public class OdinAgent implements IOdinAgent {
 	 * Set subscriptions
 	 * 
 	 * @param subscriptions
-	 * @param t
-	 *            timestamp to update lastHeard value
+	 * @param t timestamp to update lastHeard value
 	 */
 	public void setSubscriptions(String subscriptionList) {
 		invokeWriteHandler(WRITE_HANDLER_SUBSCRIPTIONS, subscriptionList);
@@ -345,8 +333,7 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Internal method to invoke a read handler on the OdinAgent
 	 * 
-	 * @param handlerName
-	 *            OdinAgent handler
+	 * @param handlerName OdinAgent handler
 	 * @return read-handler string
 	 */
 	private synchronized String invokeReadHandler(String handlerName) {
@@ -383,10 +370,8 @@ public class OdinAgent implements IOdinAgent {
 	/**
 	 * Internal method to invoke a write handler of the OdinAgent
 	 * 
-	 * @param handlerName
-	 *            OdinAgent write handler name
-	 * @param handlerText
-	 *            Write string
+	 * @param handlerName OdinAgent write handler name
+	 * @param handlerText Write string
 	 */
 	private synchronized void invokeWriteHandler(String handlerName,
 			String handlerText) {

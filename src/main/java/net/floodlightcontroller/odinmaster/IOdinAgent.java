@@ -28,6 +28,7 @@ public interface IOdinAgent {
 	 */
 	public Set<OdinClient> getLvapsRemote ();
 	
+	
 	/**
 	 * Return a list of LVAPs that the master knows this
 	 * agent is hosting. Between the time an agent has
@@ -36,7 +37,8 @@ public interface IOdinAgent {
 	 * 
 	 * @return a list of OdinClient entities on the agent
 	 */
-	public ConcurrentSkipListSet<OdinClient> getLvapsLocal ();
+	public Set<OdinClient> getLvapsLocal ();
+	
 	
 	/**
 	 * Retrive Rx-stats from the OdinAgent.
@@ -80,7 +82,7 @@ public interface IOdinAgent {
 	 * 
 	 * @param staHwAddr The STA's ethernet address
 	 */
-	public void removeLvap (OdinClient oc);
+	public void removeClientLvap (OdinClient oc);
 	
 		
 	/**
@@ -91,7 +93,7 @@ public interface IOdinAgent {
 	 * @param vapBssid	The STA specific BSSID
 	 * @param staEssid	The STA specific SSID
 	 */
-	public void addLvap (OdinClient oc);
+	public void addClientLvap (OdinClient oc);
 	
 	
 	/**
@@ -102,7 +104,7 @@ public interface IOdinAgent {
 	 * @param vapBssid The STA specific BSSID
 	 * @param staEssid The STA specific SSID
 	 */
-	public void updateLvap(OdinClient oc);
+	public void updateClientLvap(OdinClient oc);
 	
 	
 	/**

@@ -22,6 +22,32 @@ public interface ILvapManager {
 	
 	
 	/**
+	 * Add an SSID to the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be added, false otherwise
+	 */
+	public boolean addNetwork (String ssid);
+	
+	
+	/**
+	 * Remove an SSID from the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be removed, false otherwise
+	 */
+	public boolean removeNetwork (String ssid);
+	
+	
+	/**
+	 * Returns the number of networks that have been registered
+	 * 
+	 * @return number of SSIDs registered
+	 */
+	public int getNumNetworks ();
+	
+	
+	/**
 	 * Get a default list of OFMod messages to associate
 	 * with the LVAP
 	 * 

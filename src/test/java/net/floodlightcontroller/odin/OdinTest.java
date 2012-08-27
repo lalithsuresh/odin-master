@@ -113,6 +113,7 @@ public class OdinTest {
         clientManager = new ClientManager();
         agentManager = new AgentManager(clientManager);
         lvapManager = new LvapManagerImpl();
+        lvapManager.addNetwork("odin");
         odinMaster = new OdinMaster(agentManager, clientManager, lvapManager);
         
         cntx.addService(IFloodlightProviderService.class, mockFloodlightProvider);
@@ -146,13 +147,13 @@ public class OdinTest {
     	addClientToClientManagerSingleSsid(MACAddress.valueOf("00:00:00:00:00:01"),
 								 InetAddress.getByName("172.17.1.1"),
 								 MACAddress.valueOf("00:00:00:00:00:01"),
-								 "g9");
+								 "odin");
 		
 		assertEquals(clientManager.getClients().size(),1);
 		addClientToClientManagerSingleSsid(MACAddress.valueOf("00:00:00:00:00:01"),
 								 InetAddress.getByName("172.17.1.2"),
 								 MACAddress.valueOf("00:00:00:00:00:02"),
-								 "g9");
+								 "odin");
 		assertEquals(clientManager.getClients().size(),1); // Same hw-addr cant exist twice
 
 		// TODO: None of the other parameters should repeat either!
@@ -229,6 +230,7 @@ public class OdinTest {
     	
     	assertEquals(agentManager.getAgents().size(), 2);
     	
+    	System.err.println("DING DING DING " + lvapManager.getNumNetworks());
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1);
     	
     	// 2. Client should be added
@@ -882,6 +884,7 @@ public class OdinTest {
     @Test
     public void testLvapGeneration() throws Exception {
     	LvapManagerImpl lvapManager = new LvapManagerImpl();
+    	lvapManager.addNetwork("odin");
     	
     	Class target = Class.forName("net.floodlightcontroller.odinmaster.LvapManagerImpl");
     

@@ -17,6 +17,7 @@ public interface IOdinApplicationInterface {
 	 */
 	public void handoffClientToAp (MACAddress staHwAddr, InetAddress newApIpAddr);
 
+	
 	/**
 	 * Get the list of clients currently registered with Odin
 	 * 
@@ -24,11 +25,13 @@ public interface IOdinApplicationInterface {
 	 */
 	public Map<MACAddress, OdinClient> getClients ();
 	
+	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
 	public Map<InetAddress, IOdinAgent> getOdinAgents ();
+	
 	
 	/**
 	 * Add a subscription for a particular event defined by oes. cb is
@@ -42,6 +45,7 @@ public interface IOdinApplicationInterface {
 	 */
 	public long registerSubscription (OdinEventSubscription oes, NotificationCallback cb);
 	
+	
 	/**
 	 * Remove a subscription from the list
 	 * 
@@ -49,4 +53,22 @@ public interface IOdinApplicationInterface {
 	 * @return
 	 */
 	public void unregisterSubscription (long id);
+	
+	
+	/**
+	 * Add an SSID to the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be added, false otherwise
+	 */
+	public boolean addNetwork (String ssid);
+	
+	
+	/**
+	 * Remove an SSID from the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be removed, false otherwise
+	 */
+	public boolean removeNetwork (String ssid);
 }

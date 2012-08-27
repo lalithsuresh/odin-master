@@ -2,6 +2,7 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.floodlightcontroller.core.IOFSwitch;
@@ -23,7 +24,7 @@ public class StubOdinAgent implements IOdinAgent {
 	private ConcurrentSkipListSet<OdinClient> clientList = new ConcurrentSkipListSet<OdinClient>();
 	
 	@Override
-	public void addLvap(OdinClient oc) {
+	public void addClientLvap(OdinClient oc) {
 		clientList.add(oc);
 	}
 
@@ -55,7 +56,7 @@ public class StubOdinAgent implements IOdinAgent {
 	}
 
 	@Override
-	public void removeLvap(OdinClient oc) {
+	public void removeClientLvap(OdinClient oc) {
 		clientList.remove(oc);
 	}
 
@@ -74,7 +75,7 @@ public class StubOdinAgent implements IOdinAgent {
 	}
 
 	@Override
-	public ConcurrentSkipListSet<OdinClient> getLvapsLocal() {
+	public Set<OdinClient> getLvapsLocal() {
 		return clientList;
 	}
 
@@ -84,6 +85,6 @@ public class StubOdinAgent implements IOdinAgent {
 	}
 
 	@Override
-	public void updateLvap(OdinClient oc) {		
+	public void updateClientLvap(OdinClient oc) {		
 	}
 }

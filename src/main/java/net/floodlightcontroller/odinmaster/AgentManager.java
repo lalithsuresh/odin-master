@@ -110,7 +110,7 @@ public class AgentManager {
                 			// - client scans, master assigns it to AP2.
                 			// - AP1 now joins the master again, but it has the client's LVAP as well.
                 			// - Master should now clear the LVAP from AP1.
-            				oa.removeLvap(client);
+            				oa.removeClientLvap(client);
             			}
             		}
             		

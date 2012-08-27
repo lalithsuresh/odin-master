@@ -18,11 +18,13 @@ import net.floodlightcontroller.util.MACAddress;
 
 public class LvapManagerImpl implements ILvapManager{
 	
-	private final String DEFAULT_SSID = "odin";
+	private final List<String> ssidList = new ArrayList<String> ();
 	private final byte[] oui = {(byte) 0x00, (byte) 0x1b, (byte) 0xb3};
 	
 	@Override
 	public OdinClient assignLvapWithNullIp(final MACAddress clientHwAddress) {
+		
+		assert (ssidList.size() > 0);
 
 		// Generate random BSSID
 		// FIXME: We need less randomness in the least significant
@@ -32,9 +34,8 @@ public class LvapManagerImpl implements ILvapManager{
 		bssidBytes[1] = oui[1];
 		bssidBytes[2] = oui[2];
 		MACAddress bssid = MACAddress.valueOf(bssidBytes);
-		ArrayList<String> ssids = new ArrayList<String> ();
-		ssids.add(DEFAULT_SSID);
-		Lvap lvap = new Lvap (bssid, ssids);
+		
+		Lvap lvap = new Lvap (bssid, ssidList);
 				
 		try {
 			return new OdinClient(clientHwAddress, InetAddress.getByName("0.0.0.0"), lvap);
@@ -43,6 +44,29 @@ public class LvapManagerImpl implements ILvapManager{
 			e.printStackTrace();
 			return new OdinClient(clientHwAddress, null, lvap);
 		}
+	}
+	
+
+	@Override
+	public boolean addNetwork(String ssid) {
+		if (!ssidList.contains(ssid)) {
+			ssidList.add(ssid);
+			return true;
+		}
+		
+		return false;
+	}
+
+
+	@Override
+	public boolean removeNetwork(String ssid) {
+		return ssidList.remove(ssid);
+	}
+	
+
+	@Override
+	public int getNumNetworks() {
+		return ssidList.size();
 	}
 	
 	
@@ -109,4 +133,5 @@ public class LvapManagerImpl implements ILvapManager{
 		
 		return list;
 	}
+
 }

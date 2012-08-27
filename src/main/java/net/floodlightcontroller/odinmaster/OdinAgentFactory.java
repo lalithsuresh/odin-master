@@ -38,7 +38,7 @@ public class OdinAgentFactory {
 			StubOdinAgent soa = new StubOdinAgent();
 			
 			for (OdinClient client: lvapList) {
-				soa.addLvap(client);
+				soa.addClientLvap(client);
 			}
 			
 			return soa;

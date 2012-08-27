@@ -82,7 +82,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	}
 	
 	
-	/** Odin Agent->Master protocol handlers **/
+	//********* Odin Agent->Master protocol handlers *********//
 	
 	/**
 	 * Handle a ping from an agent
@@ -142,7 +142,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	    	&& clientHwAddress != null
 	    	&& clientHwAddress.isBroadcast() == false
 	    	&& clientHwAddress.isMulticast() == false
-	    	&& agentManager.isTracked(odinAgentAddr) == true) {
+	    	&& agentManager.isTracked(odinAgentAddr) == true
+	    	&& lvapManager.getNumNetworks() > 0) {
 			
 			OdinClient oc = clientManager.getClient(clientHwAddress);
 	    	
@@ -212,7 +213,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 	}
 
-	/** Odin methods to be used by applications (from IOdinApplicationInterface) **/
+	//********* Odin methods to be used by applications (from IOdinApplicationInterface) **********//
+	
 	
 	/**
 	 * VAP-Handoff a client to a new AP. This operation is idempotent.
@@ -249,8 +251,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		
 		assert (lvap != null);
 		
-		// If the client is connecting for the first time, then it
-		// doesn't have a VAP associated with it already
+		/* If the client is connecting for the first time, then it
+		 * doesn't have a VAP associated with it already
+		 */
 		if (lvap.getAgent() == null) {
 			log.info ("Client: " + clientHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
 
@@ -261,14 +264,15 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
 			}
 
-			newAgent.addLvap(client);
+			newAgent.addClientLvap(client);
 			lvap.setAgent(newAgent);
 			executor.schedule(new IdleLvapReclaimTask (client), idleLvapTimeout, TimeUnit.SECONDS);
 			return;
 		}
 		
-		// If the client is already associated with AP-newIpAddr, we ignore
-		// the request.
+		/* If the client is already associated with AP-newIpAddr, we ignore
+		 * the request.
+		 */
 		InetAddress currentApIpAddress = lvap.getAgent().getIpAddress();
 		if (currentApIpAddress.getHostAddress().equals(newApIpAddr.getHostAddress())) {
 			log.info ("Client " + clientHwAddr + " is already associated with AP " + newApIpAddr);
@@ -282,12 +286,13 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
 		}
 		
-		// Client is with another AP. We remove the VAP from
-		// the current AP of the client, and spawn it on the new one.
-		// We split the add and remove VAP operations across two threads
-		// to make it faster. Note that there is a temporary inconsistent 
-		// state between setting the agent for the client and it actually 
-		// being reflected in the network
+		/* Client is with another AP. We remove the VAP from
+		 * the current AP of the client, and spawn it on the new one.
+		 * We split the add and remove VAP operations across two threads
+		 * to make it faster. Note that there is a temporary inconsistent 
+		 * state between setting the agent for the client and it actually 
+		 * being reflected in the network 
+		 */
 		lvap.setAgent(newAgent);
 		executor.execute(new OdinAgentLvapAddRunnable(newAgent, client));
 		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgents().get(currentApIpAddress), client));
@@ -396,7 +401,72 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 	}
 	
-	/** IFloodlightModule methods **/
+
+	/**
+	 * Add an SSID to the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be added, false otherwise
+	 */
+	public synchronized boolean addNetwork (String ssid) {
+		if (lvapManager.addNetwork(ssid)){
+		
+			// need to update all existing lvaps in the network as well
+			
+			for (Entry<MACAddress, OdinClient> oc: clientManager.getClients().entrySet()) {
+				
+				Lvap lvap = oc.getValue().getLvap();
+				assert (lvap != null);
+				lvap.getSsids().add(ssid);
+				
+				IOdinAgent agent = lvap.getAgent();
+				
+				if (agent != null) {
+					// FIXME: Ugliest API on the planet
+					agent.updateClientLvap(oc.getValue());
+				}
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	
+	/**
+	 * Remove an SSID from the Odin network.
+	 * 
+	 * @param networkName
+	 * @return true if the network could be removed, false otherwise
+	 */
+	public synchronized boolean removeNetwork (String ssid) {
+		if (lvapManager.removeNetwork(ssid)){
+			
+			// need to update all existing lvaps in the network as well
+			
+			for (Entry<MACAddress, OdinClient> oc: clientManager.getClients().entrySet()) {
+				
+				Lvap lvap = oc.getValue().getLvap();
+				assert (lvap != null);
+				lvap.getSsids().remove(ssid);
+				
+				IOdinAgent agent = lvap.getAgent();
+				
+				if (agent != null) {
+					// FIXME: Ugliest API on the planet
+					agent.updateClientLvap(oc.getValue());
+				}
+			}
+			
+			return true;
+		}
+		
+		return false; 
+	}
+	
+	
+	//********* from IFloodlightModule **********//
 	
 	@Override
 	public Collection<Class<? extends IFloodlightService>> getModuleDependencies() {
@@ -487,6 +557,18 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
             port = Integer.parseInt(portNum);
         }
         
+        String ssidListStr = configOptions.get("ssidList");
+        
+        if (ssidListStr == null) {
+        	log.info("Configuration file doesn't specify any SSIDs to load");
+        }
+        
+        String [] ssidList = ssidListStr.split(",");
+        
+        for (String ssid: ssidList) {
+        	lvapManager.addNetwork(ssid);
+        }
+        
         // Spawn threads for different services
         executor.execute(new OdinAgentProtocolServer(this, port));
         
@@ -556,7 +638,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 		@Override
 		public void run() {
-			oa.addLvap(oc);
+			oa.addClientLvap(oc);
 		}
 		
 	}
@@ -571,7 +653,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 		@Override
 		public void run() {
-			oa.removeLvap(oc);
+			oa.removeClientLvap(oc);
 		}
 		
 	}
@@ -633,7 +715,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         			} catch (IOException e) {
         				log.error("Failed to update switch's flow tables " + oc.getLvap().getAgent().getSwitch());
         			}
-        			oc.getLvap().getAgent().updateLvap(oc);
+        			oc.getLvap().getAgent().updateClientLvap(oc);
         		}
         		
 			} catch (UnknownHostException e) {
@@ -678,7 +760,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 					if (agent != null) {
 						log.info("Clearing Lvap " + client.getMacAddress() + 
 								" from agent:" + agent.getIpAddress() + " due to inactivity");
-						agent.removeLvap(client);
+						agent.removeClientLvap(client);
 						clientManager.removeClient(client.getMacAddress());
 					}
 				}
@@ -687,4 +769,5 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			}
 		}
 	}
+
 }
