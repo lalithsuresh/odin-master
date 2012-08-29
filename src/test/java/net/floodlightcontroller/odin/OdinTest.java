@@ -474,6 +474,8 @@ public class OdinTest {
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
     	ArrayList<String> ssidList = new ArrayList<String> ();
     	ssidList.add("odin");
+    	ssidList.add("odin-1");
+    	ssidList.add("odin-2");
     	Lvap lvap = new Lvap (MACAddress.valueOf("00:00:00:00:11:12"), ssidList);
     	OdinClient oc = new OdinClient(clientMacAddr2, InetAddress.getByName("172.17.1.52"), lvap);
     	lvapList.add(oc);
@@ -485,6 +487,7 @@ public class OdinTest {
     	assertEquals(clientManager.getClients().size(), 2);
     	assertEquals(agentManager.getAgents().size(), 2);
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
+    	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getSsids().size(), 3);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
@@ -551,6 +554,8 @@ public class OdinTest {
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
     	ArrayList<String> ssidList = new ArrayList<String> ();
     	ssidList.add("odin");
+    	ssidList.add("odin-1");
+    	ssidList.add("odin-2");
     	Lvap lvap = new Lvap (MACAddress.valueOf("00:00:00:00:11:11"), ssidList);
     	OdinClient oc = new OdinClient(clientMacAddr1, InetAddress.getByName("172.17.2.51"), lvap);
     	lvapList.add(oc);
@@ -566,6 +571,7 @@ public class OdinTest {
     	assertEquals(agentManager.getAgents().size(), 1);
     	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
     	assertEquals(odinMaster.getClients().size(), 1);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
     	
     	// Time out the agent
     	Thread.sleep(2000);
@@ -573,6 +579,7 @@ public class OdinTest {
     	assertEquals(agentManager.getAgents().size(), 0);
     	assertEquals(odinMaster.getClients().size(), 1);
     	assertEquals(odinMaster.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
+    	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
