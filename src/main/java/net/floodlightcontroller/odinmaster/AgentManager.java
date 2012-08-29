@@ -94,15 +94,18 @@ public class AgentManager {
             		// to our client tracker accordingly.
             		for (OdinClient client: oa.getLvapsRemote()) {
             			
-            			if (clientManager.getClients().get(client.getMacAddress()) == null){
+            			OdinClient trackedClient = clientManager.getClients().get(client.getMacAddress());
+            			
+            			if (trackedClient == null){
             				clientManager.addClient(client.getMacAddress(), client.getIpAddress(),
             									client.getLvap());
+            				trackedClient = clientManager.getClients().get(client.getMacAddress());
             			}	
             			
-            			if (clientManager.getClients().get(client.getMacAddress()).getLvap().getAgent() == null) {
-            				clientManager.getClients().get(client.getMacAddress()).getLvap().setAgent(oa);
+            			if (trackedClient.getLvap().getAgent() == null) {
+            				trackedClient.getLvap().setAgent(oa);
             			}
-            			else {
+            			else if (!trackedClient.getLvap().getAgent().getIpAddress().equals(odinAgentAddr)) {
                 			// Race condition: 
                 			// - client associated at AP1 before the master failure,
                 			// - master crashes.
