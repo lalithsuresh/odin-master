@@ -2,9 +2,14 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,18 +23,26 @@ import net.floodlightcontroller.odinmaster.OdinMaster;
 
 
 public class AgentManager {
-	private final ConcurrentHashMap<InetAddress, IOdinAgent> agentMap = new ConcurrentHashMap<InetAddress, IOdinAgent> ();
+	private final ConcurrentHashMap<String, ConcurrentHashMap<InetAddress, IOdinAgent>> agentMap = new ConcurrentHashMap<String, ConcurrentHashMap<InetAddress,IOdinAgent>>();
     protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
+    
     private IFloodlightProviderService floodlightProvider;
     private final ClientManager clientManager;
+    private final PoolManager poolManager;
+    
 	private final Timer failureDetectionTimer = new Timer();
 	private int agentTimeout = 6000;
+	
+	private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock ();
+	private final Lock readLock = readWriteLock.readLock();
+	private final Lock writeLock = readWriteLock.writeLock();
 
-	public AgentManager (final ClientManager clientManager) {
+	public AgentManager (ClientManager clientManager, PoolManager poolManager) {
 		this.clientManager = clientManager;
+		this.poolManager = poolManager;
 	}
  
-    public void setFloodlightProvider(IFloodlightProviderService provider) {
+    public void setFloodlightProvider(final IFloodlightProviderService provider) {
     	floodlightProvider = provider;
     }
     
@@ -39,6 +52,7 @@ public class AgentManager {
     	agentTimeout = timeout;
     }
     
+    
     /**
 	 * Confirm if the agent corresponding to an InetAddress
 	 * is being tracked.
@@ -47,15 +61,71 @@ public class AgentManager {
 	 * @return true if the agent is being tracked
 	 */
 	public boolean isTracked(final InetAddress odinAgentInetAddress) {
-		return agentMap.containsKey(odinAgentInetAddress);
+		readLock.lock();
+		try {
+			return agentMap.containsKey(PoolManager.GLOBAL_POOL) &&
+					agentMap.get(PoolManager.GLOBAL_POOL).containsKey(odinAgentInetAddress);
+		}
+		finally {
+			readLock.unlock();
+		}
 	}
 	
+	
 	/**
-	 * Get the list of agents being tracked
+	 * Get the list of agents being tracked for a particular pool
 	 * @return agentMap
 	 */
-	public ConcurrentHashMap<InetAddress, IOdinAgent> getAgents() {
-		return agentMap;
+	public Map<InetAddress, IOdinAgent> getAgents(final String pool) {
+		readLock.lock();
+		try {
+			if (agentMap.containsKey(pool)) {
+				return Collections.unmodifiableMap(agentMap.get(pool));
+			}
+			else {
+				return new HashMap<InetAddress, IOdinAgent>();
+			}
+		}
+		finally {
+			readLock.unlock();
+		}
+	}
+	
+	
+	/**
+	 * Get a reference to an agent
+	 * 
+	 * @param agentInetAddr
+	 */
+	public IOdinAgent getAgent(final InetAddress agentInetAddr) {
+		assert (agentInetAddr != null);
+		readLock.lock();
+		try {
+			final IOdinAgent agentRef = agentMap.get(PoolManager.GLOBAL_POOL).get(agentInetAddr);
+			return agentRef;
+		}
+		finally {
+			readLock.unlock();
+		}
+	}
+	
+	
+	/**
+	 * Removes an agent from the agent manager
+	 * 
+	 * @param agentInetAddr
+	 */
+	public void removeAgent(InetAddress agentInetAddr) {
+		writeLock.lock();
+		
+		try {
+			for (String pool: poolManager.getPoolsForAgent(agentInetAddr)) {
+				agentMap.get(pool).remove(agentInetAddr);
+			}
+		}
+		finally {
+			writeLock.unlock();
+		}
 	}
 	
 	// Handle protocol messages here
@@ -72,7 +142,7 @@ public class AgentManager {
 		
 		// If this is the first time we're hearing from this
     	// agent, then keep track of it.
-    	if (odinAgentAddr != null && !agentMap.containsKey (odinAgentAddr)) {
+    	if (odinAgentAddr != null && !isTracked (odinAgentAddr)) {
     		
     		// If the OFSwitch corresponding to the agent has already
     		// registered here, then set it in the OdinAgent object.
@@ -117,7 +187,19 @@ public class AgentManager {
             			}
             		}
             		
-            		agentMap.put(odinAgentAddr, oa);
+            		writeLock.lock();
+            		try {
+            			for (String pool: poolManager.getPoolsForAgent(odinAgentAddr)) {
+            				if (!agentMap.containsKey(pool)) {
+            					agentMap.put(pool, new ConcurrentHashMap<InetAddress, IOdinAgent>());
+            				}
+            				agentMap.get(pool).put(odinAgentAddr, oa);
+            			}
+            		}
+            		finally {
+            			writeLock.unlock();
+            		}
+            		
             		log.info("Adding OdinAgent to map: " + odinAgentAddr.getHostAddress());
             		
             		// This TimerTask checks the lastHeard value
@@ -158,7 +240,7 @@ public class AgentManager {
 				}
 				
 				// Agent should now be cleared out
-				agentMap.remove(agent.getIpAddress());
+				removeAgent(agent.getIpAddress());
 				this.cancel();
 			}
 		}

@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,27 +64,32 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	private final AgentManager agentManager;
 	private final ClientManager clientManager;	
 	private final ILvapManager lvapManager;
+	private final PoolManager poolManager;
 	
 	private long subscriptionId = 0;
 	private String subscriptionList = "";
-	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
 	private int idleLvapTimeout = 30; // Seconds
+	
+	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
 
 	// some defaults
-	static private final String DEFAULT_AUTHFILE = "odin_authorisation";  
+	static private final String DEFAULT_AGENT_AUTH_FILE = "odin_agent_auth"; 
+	static private final String DEFAULT_CLIENT_LIST_FILE = "odin_client_list";  
 	static private final String DEFAULT_SSID = "odin";
 	static private final int DEFAULT_PORT = 2819;
 	
 	public OdinMaster(){
 		clientManager = new ClientManager();
-		agentManager = new AgentManager(clientManager);
 		lvapManager = new LvapManagerImpl();
+		poolManager = new PoolManager();
+		agentManager = new AgentManager(clientManager, poolManager);
 	}
 	
-	public OdinMaster(AgentManager agentManager, ClientManager clientManager, ILvapManager lvapManager){
+	public OdinMaster(AgentManager agentManager, ClientManager clientManager, ILvapManager lvapManager, PoolManager poolManager){
 		this.agentManager = agentManager;
 		this.clientManager = clientManager;
 		this.lvapManager = lvapManager;
+		this.poolManager = poolManager;
 	}
 	
 	
@@ -99,10 +105,11 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			// if the above leads to a new agent being
 			// tracked, push the current subscription list
 			// to it.
-			pushSubscriptionListToAgent(agentManager.getAgents().get(odinAgentAddr));			
+			IOdinAgent agent = agentManager.getAgent(odinAgentAddr);
+			pushSubscriptionListToAgent(agent);
 
 			// Reclaim idle lvaps and also attach flows to lvaps
-			for (OdinClient client: agentManager.getAgents().get(odinAgentAddr).getLvapsLocal()) {
+			for (OdinClient client: agent.getLvapsLocal()) {
 				executor.schedule(new IdleLvapReclaimTask(client), idleLvapTimeout, TimeUnit.SECONDS);
 				
 				// Assign flow tables
@@ -126,7 +133,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 
 		// Perform some book-keeping
-		IOdinAgent agent = agentManager.getAgents().get(odinAgentAddr);
+		IOdinAgent agent = agentManager.getAgent(odinAgentAddr);
 		
 		if (agent != null) {
 			// Update last-heard for failure detection
@@ -149,7 +156,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	    	&& clientHwAddress.isMulticast() == false
 	    	&& agentManager.isTracked(odinAgentAddr) == true
 	    	&& lvapManager.getNumNetworks() > 0) {
-			
+
 			OdinClient oc = clientManager.getClient(clientHwAddress);
 	    	
 	    	// Hearing from this client for the first time
@@ -171,7 +178,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			}
 			
 			// Update last-heard for failure detection
-			IOdinAgent agent = agentManager.getAgents().get(odinAgentAddr);
+			IOdinAgent agent = agentManager.getAgent(odinAgentAddr);
 			if (agent != null)
 				agent.setLastHeard(System.currentTimeMillis());
 		}
@@ -192,7 +199,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		if (clientHwAddress == null || odinAgentAddr == null || subscriptionIds == null)
 			return;
 		
-		IOdinAgent oa = agentManager.getAgents().get(odinAgentAddr);
+		IOdinAgent oa = agentManager.getAgent(odinAgentAddr);
 		
 		// This should never happen!
 		if (oa == null)
@@ -236,7 +243,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			return;
 		}
 		
-		IOdinAgent newAgent = agentManager.getAgents().get(newApIpAddr);
+		IOdinAgent newAgent = agentManager.getAgent(newApIpAddr);
 		
 		// If new agent doesn't exist, ignore request
 		if (newAgent == null) {
@@ -300,7 +307,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		 */
 		lvap.setAgent(newAgent);
 		executor.execute(new OdinAgentLvapAddRunnable(newAgent, client));
-		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgents().get(currentApIpAddress), client));
+		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgent(currentApIpAddress), client));
 	}
 	
 	
@@ -310,7 +317,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
 	public Map<MACAddress, OdinClient> getClients () {
-		return clientManager.getClients();
+		return Collections.unmodifiableMap(clientManager.getClients());
 	}
 	
 	
@@ -319,7 +326,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
 	public Map<InetAddress, IOdinAgent> getOdinAgents (){
-		return agentManager.getAgents();
+		// FIXME: Should only return agents corresponding to
+		// the applications pool
+		return agentManager.getAgents(PoolManager.GLOBAL_POOL);
 	}
 	
 	
@@ -515,15 +524,51 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		// read config options
         Map<String, String> configOptions = context.getConfigParams(this);
         
-        String authFile = DEFAULT_AUTHFILE; // default
-        String authFileConfig = configOptions.get("authFile");
         
-        if (authFileConfig != null) {
-            authFile = authFileConfig;
+        // List of trusted agents
+        String agentAuthListFile = DEFAULT_AGENT_AUTH_FILE;
+        String agentAuthListFileConfig = configOptions.get("agentList");
+        
+        if (agentAuthListFileConfig != null) {
+        	agentAuthListFile = agentAuthListFileConfig; 
+        }
+        
+       	try {
+			BufferedReader br = new BufferedReader (new FileReader(agentAuthListFile));
+			
+			String strLine;
+			
+			/* Each line has the following format:
+			 * 
+			 * IPAddr-of-agent  pool1 pool2 pool3 ...
+			 */
+			while ((strLine = br.readLine()) != null) {
+				String [] fields = strLine.split(" ");
+				
+				InetAddress agentInetAddr = InetAddress.getByName(fields[0]);
+				
+				for (int i = 1; i < fields.length; i++) {
+					poolManager.addPoolForAgent(agentInetAddr, fields[i]);
+				}
+			}
+			
+		} catch (FileNotFoundException e1) {
+			log.error("Agent authentication list (config option agentList) not supplied. Terminating.");
+			System.exit(1);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+        // Static client - lvap assignments
+        String clientListFile = DEFAULT_CLIENT_LIST_FILE;
+        String clientListFileConfig = configOptions.get("clientList");
+        
+        if (clientListFileConfig != null) {
+            clientListFile = clientListFileConfig;
         }
         
         try {
-			BufferedReader br = new BufferedReader (new FileReader(authFile));
+			BufferedReader br = new BufferedReader (new FileReader(clientListFile));
 			
 			String strLine;
 			
@@ -534,7 +579,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				InetAddress ipaddr = InetAddress.getByName(fields[1]);
 				
 				ArrayList<String> ssidList = new ArrayList<String> ();
-				ssidList.add(fields[3]);
+				ssidList.add(fields[3]); // FIXME: assumes a single ssid
 				Lvap lvap = new Lvap(MACAddress.valueOf(fields[2]), ssidList);
 
 				log.info("Adding client: " + fields[0] + " " + fields[1] + " " +fields[2] + " " +fields[3]);
@@ -546,7 +591,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-        
+
+        // Lvap timeout, port, and ssid-list
         String timeoutStr = configOptions.get("idleLvapTimeout");
         if (timeoutStr != null) {
         	int timeout = Integer.parseInt(timeoutStr);
@@ -619,8 +665,10 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	public void removedSwitch(IOFSwitch sw) {
 		// Not all OF switches are Odin agents. We should immediately remove
 		// any associated Odin agent then.
-		final InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
-		agentManager.getAgents().remove(switchIpAddr);		
+		
+		// FIXME: Expose remove API
+//		final InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
+//		agentManager.remove(switchIpAddr);		
 	}
 
 	/**
