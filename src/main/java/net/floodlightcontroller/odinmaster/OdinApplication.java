@@ -49,7 +49,7 @@ public abstract class OdinApplication implements Runnable {
 	 * @param newApIpAddr IPv4 address of new access point
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
-	public void handoffClientToAp (MACAddress staHwAddr, InetAddress newApIpAddr) {
+	public final void handoffClientToAp (MACAddress staHwAddr, InetAddress newApIpAddr) {
 		odinApplicationInterface.handoffClientToAp(pool, staHwAddr, newApIpAddr);
 	}
 
@@ -59,7 +59,7 @@ public abstract class OdinApplication implements Runnable {
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public Map<MACAddress, OdinClient> getClients () {
+	public final Map<MACAddress, OdinClient> getClients () {
 		return odinApplicationInterface.getClients(pool);		
 	}
 	
@@ -68,7 +68,7 @@ public abstract class OdinApplication implements Runnable {
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public Map<InetAddress, IOdinAgent> getOdinAgents () {
+	public final Map<InetAddress, IOdinAgent> getOdinAgents () {
 		return odinApplicationInterface.getOdinAgents(pool);
 	}
 	
@@ -83,7 +83,7 @@ public abstract class OdinApplication implements Runnable {
 	 * @param oes the susbcription
 	 * @param cb the callback
 	 */
-	public long registerSubscription (OdinEventSubscription oes, NotificationCallback cb){
+	public final long registerSubscription (OdinEventSubscription oes, NotificationCallback cb){
 		return odinApplicationInterface.registerSubscription(pool, oes, cb);
 	}
 	
@@ -94,7 +94,7 @@ public abstract class OdinApplication implements Runnable {
 	 * @param id subscription id to remove
 	 * @return
 	 */
-	public void unregisterSubscription (long id) {
+	public final void unregisterSubscription (long id) {
 		odinApplicationInterface.unregisterSubscription(pool, id);
 	}
 	
@@ -105,7 +105,7 @@ public abstract class OdinApplication implements Runnable {
 	 * @param networkName
 	 * @return true if the network could be added, false otherwise
 	 */
-	public boolean addNetwork (String ssid) {
+	public final boolean addNetwork (String ssid) {
 		return odinApplicationInterface.addNetwork(pool, ssid);
 	}
 	
@@ -116,7 +116,7 @@ public abstract class OdinApplication implements Runnable {
 	 * @param networkName
 	 * @return true if the network could be removed, false otherwise
 	 */
-	public boolean removeNetwork (String ssid) {
+	public final boolean removeNetwork (String ssid) {
 		return odinApplicationInterface.removeNetwork(pool, ssid);
 	}
 }
