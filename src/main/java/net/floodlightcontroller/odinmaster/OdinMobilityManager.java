@@ -47,7 +47,7 @@ public class OdinMobilityManager extends OdinApplication {
 			}
 		};
 		
-		odinApplicationInterface.registerSubscription(oes, cb);
+		registerSubscription(oes, cb);
 	}
 	
 	@Override
@@ -67,7 +67,7 @@ public class OdinMobilityManager extends OdinApplication {
 	 */
 	private void handler (OdinEventSubscription oes, NotificationCallbackContext cntx) {
 		// Check to see if this is a client we're tracking
-		OdinClient client = odinApplicationInterface.getClients().get(cntx.clientHwAddress);
+		OdinClient client = getClients().get(cntx.clientHwAddress);
 		
 		if (client == null)
 			return;
@@ -83,14 +83,14 @@ public class OdinMobilityManager extends OdinApplication {
 		
 		// If client hasn't been assigned an agent, do so
 		if (client.getLvap().getAgent() == null) {
-			odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
+			handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 			updateStatsWithReassignment (stats, cntx.value, currentTimestamp); 
 			return;
 		}
 		
 		// Check for out-of-range client
 		if ((currentTimestamp - stats.lastHeard) > IDLE_CLIENT_THRESHOLD) {
-			odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
+			handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 			updateStatsWithReassignment (stats, cntx.value, currentTimestamp);	
 			return;
 		}
@@ -108,7 +108,7 @@ public class OdinMobilityManager extends OdinApplication {
 			
 			// We're outside the hysteresis period, so compare signal strengths for a handoff
 			if (cntx.value >= stats.signalStrength + SIGNAL_STRENGTH_THRESHOLD) {
-				odinApplicationInterface.handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
+				handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 				updateStatsWithReassignment (stats, cntx.value, currentTimestamp);
 				return;
 			}

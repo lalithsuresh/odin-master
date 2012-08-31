@@ -14,6 +14,6 @@ public class AllClientsResource extends ServerResource {
     	OdinMaster oc = (OdinMaster) getContext().getAttributes().
         					get(OdinMaster.class.getCanonicalName());
     	
-    	return oc.getClients();
+    	return oc.getClients(PoolManager.GLOBAL_POOL);
     }
 }

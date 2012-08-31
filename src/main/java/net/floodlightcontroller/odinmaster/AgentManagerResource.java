@@ -12,6 +12,6 @@ public class AgentManagerResource extends ServerResource {
     	OdinMaster oc = (OdinMaster) getContext().getAttributes().
         					get(OdinMaster.class.getCanonicalName());
     	
-    	return oc.getOdinAgents();
+    	return oc.getOdinAgents(PoolManager.GLOBAL_POOL);
     }
 }

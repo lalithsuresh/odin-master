@@ -575,7 +575,7 @@ public class OdinTest {
         OdinAgentFactory.setOdinAgentType("MockOdinAgent");
     	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
     	
-    	assertEquals(odinMaster.getClients().size(), 0);
+    	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 0);
     	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
     	
     	addAgentWithMockSwitch(ipAddress1, 12345);
@@ -583,15 +583,15 @@ public class OdinTest {
     	
     	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
     	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
-    	assertEquals(odinMaster.getClients().size(), 1);
+    	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 1);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
     	
     	// Time out the agent
     	Thread.sleep(2000);
     	
     	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
-    	assertEquals(odinMaster.getClients().size(), 1);
-    	assertEquals(odinMaster.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
+    	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).get(clientMacAddr1).getLvap().getAgent(), null);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
@@ -712,7 +712,7 @@ public class OdinTest {
     	assertEquals(app2.counter, 1);
     	
     	
-    	odinMaster.unregisterSubscription(id1);
+    	odinMaster.unregisterSubscription(PoolManager.GLOBAL_POOL, id1);
     	
     	/**
     	 * Should only trigger app2's handler
@@ -721,7 +721,7 @@ public class OdinTest {
     	assertEquals(app1.counter, 2);
     	assertEquals(app2.counter, 2);
     	
-    	odinMaster.unregisterSubscription(id1);
+    	odinMaster.unregisterSubscription(PoolManager.GLOBAL_POOL, id1);
     	
     	/**
     	 * Should only trigger app2's handler
@@ -730,7 +730,7 @@ public class OdinTest {
     	assertEquals(app1.counter, 2);
     	assertEquals(app2.counter, 3);
     	
-    	odinMaster.unregisterSubscription(id2);
+    	odinMaster.unregisterSubscription(PoolManager.GLOBAL_POOL, id2);
     	
     	/**
     	 * Should not trigger any handler
@@ -954,7 +954,7 @@ public class OdinTest {
 				}
 			};
 			
-			odinMaster.registerSubscription(oes, cb);
+			odinMaster.registerSubscription(PoolManager.GLOBAL_POOL, oes, cb);
 		}
 		
     	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
@@ -981,8 +981,8 @@ public class OdinTest {
 				}
 			};
 			
-			odinMaster.registerSubscription(oes1, cb);
-			odinMaster.registerSubscription(oes2, cb);
+			odinMaster.registerSubscription(PoolManager.GLOBAL_POOL, oes1, cb);
+			odinMaster.registerSubscription(PoolManager.GLOBAL_POOL, oes2, cb);
 		}
 		
     	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
@@ -1018,8 +1018,8 @@ public class OdinTest {
 				}
 			};
 			
-			odinMaster.registerSubscription(oes1, cb1);
-			odinMaster.registerSubscription(oes2, cb2);
+			odinMaster.registerSubscription(PoolManager.GLOBAL_POOL, oes1, cb1);
+			odinMaster.registerSubscription(PoolManager.GLOBAL_POOL, oes2, cb2);
 		}
 		
     	private void callback1(OdinEventSubscription oes, NotificationCallbackContext cntx){
@@ -1052,6 +1052,7 @@ public class OdinTest {
     public void testMobilityManagerTwoAps() throws Exception {
     	OdinMobilityManager app = new OdinMobilityManager(1000, 2000, 10);
     	app.setOdinInterface(odinMaster);
+    	app.setPool("ppol-1");
     	app.run(); // This isn't really a thread, but sets up callbacks
 
     	String ipAddress1 = "172.17.2.161";

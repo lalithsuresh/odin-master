@@ -225,8 +225,6 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 	}
 
-	//********* Odin methods to be used by applications (from IOdinApplicationInterface) **********//
-	
 	
 	/**
 	 * VAP-Handoff a client to a new AP. This operation is idempotent.
@@ -310,13 +308,26 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgent(currentApIpAddress), client));
 	}
 	
+	//********* Odin methods to be used by applications (from IOdinApplicationInterface) **********//
+	
+	/**
+	 * VAP-Handoff a client to a new AP. This operation is idempotent.
+	 * 
+	 * @param newApIpAddr IPv4 address of new access point
+	 * @param hwAddrSta Ethernet address of STA to be handed off
+	 */
+	public void handoffClientToAp (String pool, final MACAddress clientHwAddr, final InetAddress newApIpAddr){
+		// Verify pool stuff
+		handoffClientToAp(clientHwAddr, newApIpAddr);
+	}
+	
 	
 	/**
 	 * Get the list of clients currently registered with Odin
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public Map<MACAddress, OdinClient> getClients () {
+	public Map<MACAddress, OdinClient> getClients (String pool) {
 		return Collections.unmodifiableMap(clientManager.getClients());
 	}
 	
@@ -325,7 +336,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public Map<InetAddress, IOdinAgent> getOdinAgents (){
+	public Map<InetAddress, IOdinAgent> getOdinAgents (String pool){
 		// FIXME: Should only return agents corresponding to
 		// the applications pool
 		return agentManager.getAgents(PoolManager.GLOBAL_POOL);
@@ -342,7 +353,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param oes the susbcription
 	 * @param cb the callback
 	 */
-	public synchronized long registerSubscription (final OdinEventSubscription oes, final NotificationCallback cb) {
+	public synchronized long registerSubscription (String pool, final OdinEventSubscription oes, final NotificationCallback cb) {
+		// FIXME: Need to calculate subscriptions per pool
 		assert (oes != null);
 		assert (cb != null);
 		SubscriptionCallbackTuple tup = new SubscriptionCallbackTuple();
@@ -375,7 +387,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		/**
 		 * Should probably have threads to do this
 		 */
-		for (Entry<InetAddress, IOdinAgent> entry : getOdinAgents().entrySet()) {
+		for (Entry<InetAddress, IOdinAgent> entry : agentManager.getAgents(pool).entrySet()) {
 			pushSubscriptionListToAgent(entry.getValue());
 		}
 		
@@ -389,7 +401,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param id subscription id to remove
 	 * @return
 	 */
-	public synchronized void unregisterSubscription (final long id) {
+	public synchronized void unregisterSubscription (String pool, final long id) {
+		// FIXME: Need to calculate subscriptions per pool
 		subscriptions.remove(id);
 		
 		subscriptionList = "";
@@ -410,7 +423,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		/**
 		 * Should probably have threads to do this
 		 */
-		for (Entry<InetAddress, IOdinAgent> entry : getOdinAgents().entrySet()) {
+		for (Entry<InetAddress, IOdinAgent> entry : agentManager.getAgents(pool).entrySet()) {
 			pushSubscriptionListToAgent(entry.getValue());
 		}
 	}
@@ -422,7 +435,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param networkName
 	 * @return true if the network could be added, false otherwise
 	 */
-	public synchronized boolean addNetwork (String ssid) {
+	public synchronized boolean addNetwork (String pool, String ssid) {
 		if (lvapManager.addNetwork(ssid)){
 		
 			// need to update all existing lvaps in the network as well
@@ -454,7 +467,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param networkName
 	 * @return true if the network could be removed, false otherwise
 	 */
-	public synchronized boolean removeNetwork (String ssid) {
+	public synchronized boolean removeNetwork (String pool, String ssid) {
 		if (lvapManager.removeNetwork(ssid)){
 			
 			// need to update all existing lvaps in the network as well
