@@ -29,7 +29,7 @@ public class LvapHandoffResource extends ServerResource {
 			String staHwAddress = fmdata.get("clientHwAddress");
 	        String apIpAddress= fmdata.get("apIpAddress");
 	    
-	        oc.handoffClientToAp(MACAddress.valueOf(staHwAddress), InetAddress.getByName(apIpAddress));
+	        oc.handoffClientToAp(PoolManager.GLOBAL_POOL, MACAddress.valueOf(staHwAddress), InetAddress.getByName(apIpAddress));
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

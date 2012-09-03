@@ -125,6 +125,9 @@ public class OdinTest {
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.161"), "pool-1");
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.162"), "pool-1");
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.163"), "pool-1");
+			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.164"), "pool-2");
+			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.165"), "pool-2");
+			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.166"), "pool-3");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -217,6 +220,11 @@ public class OdinTest {
         // Let's try again
         agentManager.receivePing(InetAddress.getByName("127.0.0.1"));
         
+        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),1);
+        
+        // This agent is not listed in the pool manager's list,
+        // so it shouldn't get added.
+        agentManager.receivePing(InetAddress.getByName("172.17.5.63"));
         assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),1);
     }
     
@@ -336,7 +344,7 @@ public class OdinTest {
     	MACAddress clientMacAddr2 = MACAddress.valueOf("00:00:00:00:00:02");
     	
     	// Things shouldn't explode if this is called
-    	odinMaster.handoffClientToAp(null, null);
+    	odinMaster.handoffClientToAp(null, null, null);
         
     	
     	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
@@ -352,23 +360,23 @@ public class OdinTest {
     	///// Sane cases /////
     	
     	// Handoff client for the first time to AP that exists
-    	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress1));
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Handoff client to the same AP, nothing should change
-    	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress1));
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Handoff client to AP2 that exists
-    	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress2));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress2));
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     	
     	// Handoff client to AP3 that exists
-    	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress3));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress3));
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress3));
     	
     	// And back to AP1
-    	odinMaster.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress1));
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	
@@ -376,14 +384,14 @@ public class OdinTest {
     	
     	// Handoff unauthorised client around, it should never
     	// be assigned an LVAP
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress1));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress1));
     	assertNull(clientManager.getClients().get(clientMacAddr2)); // If this is null, it can never be assigned an LVAP
     	
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress2));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress2));
     	assertNull(clientManager.getClients().get(clientMacAddr2));
     	
     	// Now try handing off to non-existent AP
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress4));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress4));
     	assertNull(clientManager.getClients().get(clientMacAddr2));
     	
     	
@@ -394,24 +402,24 @@ public class OdinTest {
     	
     	// Handoff authorised client to non-existent agent,
     	// it should still not have an LVAP
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress4));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress4));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
     	assertNull(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent());
     	
     	// Now handoff to an existing agent
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress1));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress1));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Now handoff to a non-existing agent, the client's
     	// LVAP should not have changed
-    	odinMaster.handoffClientToAp(clientMacAddr2, InetAddress.getByName(ipAddress4));
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, InetAddress.getByName(ipAddress4));
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     	
     	// Now handoff to a null agent, the client's agent
     	// assignment shouldn't have changed
-    	odinMaster.handoffClientToAp(clientMacAddr2, null);
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr2, null);
     	assertNotNull(clientManager.getClients().get(clientMacAddr2));
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
     }
@@ -937,6 +945,7 @@ public class OdinTest {
     	assertTrue( oc3.getMacAddress() == oc2.getMacAddress() );
     }
     
+    
     // Application that registers 1 subscription -> 1 handler
     private class DummyApplication1 extends OdinApplication {
     	public int counter = 0;
@@ -1031,6 +1040,106 @@ public class OdinTest {
     	}
     }
     
+    /************* Odin Application Interface Tests ******************/
+    
+    
+    /**
+     * Test to see if the master provides
+     * the application only the view corresponding
+     * to the pools it is associated with
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testApplicationView() throws Exception {
+    	OdinApplication app = new OdinApplicationImpl();
+    	app.setOdinInterface(odinMaster);
+    	app.setPool("pool-1");
+    	app.run();
+    	
+    	// Should only correspond to pool-1 agents
+    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-1").size());
+    	
+    	app.setPool("pool-2");
+    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-2").size());
+    	
+    	app.setPool("pool-3");
+    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-3").size());
+    	
+    	app.setPool("pool-that-doesnt-exist");
+    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-that-doesnt-exist").size());
+    	assertEquals(app.getOdinAgents().size(), 0);
+    	
+    	app.setPool(PoolManager.GLOBAL_POOL);
+    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents(PoolManager.GLOBAL_POOL).size());
+    }
+    
+    
+    /**
+     * Apps should only be able to handoff lvaps within
+     * the pool it is in
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testPoolRestrictedHandoff() throws Exception {
+    	OdinApplication app = new OdinApplicationImpl();
+    	app.setOdinInterface(odinMaster);
+    	app.setPool("pool-1");
+    	app.run();
+    	
+    	String ipAddress1 = "172.17.2.161"; // pool 1
+    	String ipAddress2 = "172.17.2.162"; // pool 1
+    	String ipAddress3 = "172.17.2.164"; // pool 2
+    	String ipAddress4 = "172.17.2.165"; // pool 2
+    	String ipAddress5 = "172.17.2.166"; // pool 3
+    	
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");    	
+    	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");
+  	
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	addAgentWithMockSwitch(ipAddress2, 12345);
+    	addAgentWithMockSwitch(ipAddress3, 12345);
+    	addAgentWithMockSwitch(ipAddress4, 12345);
+    	addAgentWithMockSwitch(ipAddress5, 12345);
+    	
+    	// Let the client start at pool-1
+    	odinMaster.handoffClientToAp(PoolManager.GLOBAL_POOL, clientMacAddr1, InetAddress.getByName(ipAddress1));
+    	
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+    					InetAddress.getByName(ipAddress1));
+
+    	// We should only be able to handoff within the same pool
+    	app.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress2));
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+				InetAddress.getByName(ipAddress2));
+    	
+    	app.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress1));
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+				InetAddress.getByName(ipAddress1));
+    	
+    	app.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress3));
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+				InetAddress.getByName(ipAddress1));
+    	
+    	app.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress4));
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+				InetAddress.getByName(ipAddress1));
+    	
+    	app.handoffClientToAp(clientMacAddr1, InetAddress.getByName(ipAddress5));
+    	assertEquals(clientManager.getClient(clientMacAddr1).getLvap().getAgent().getIpAddress(),
+				InetAddress.getByName(ipAddress1));
+    }
+    
+    
+    private class OdinApplicationImpl extends OdinApplication {
+
+		@Override
+		public void run() {	
+		}
+    }
+    
+    
     /************* Mobility Manager Tests ******************/
     
     private void triggerSingleEvent (MACAddress clientMacAddr, InetAddress agentAddr, long id, long value) {
@@ -1052,7 +1161,7 @@ public class OdinTest {
     public void testMobilityManagerTwoAps() throws Exception {
     	OdinMobilityManager app = new OdinMobilityManager(1000, 2000, 10);
     	app.setOdinInterface(odinMaster);
-    	app.setPool("ppol-1");
+    	app.setPool("pool-1");
     	app.run(); // This isn't really a thread, but sets up callbacks
 
     	String ipAddress1 = "172.17.2.161";

@@ -174,7 +174,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				// disconnected, or knocked
 				// out at as a result of an agent
 				// failure.
-				handoffClientToAp(clientHwAddress, odinAgentAddr);
+				
+				// Use global pool for first time connections
+				handoffClientToApInternal(PoolManager.GLOBAL_POOL, clientHwAddress, odinAgentAddr);
 			}
 			
 			// Update last-heard for failure detection
@@ -232,12 +234,12 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param newApIpAddr IPv4 address of new access point
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
-	public void handoffClientToAp (final MACAddress clientHwAddr, final InetAddress newApIpAddr){
+	private void handoffClientToApInternal (String pool, final MACAddress clientHwAddr, final InetAddress newApIpAddr){
 		// As an optimisation, we probably need to get the accessing done first,
 		// prime both nodes, and complete a handoff. 
 		
-		if (clientHwAddr == null || newApIpAddr == null) {
-			log.error("null argument in handoffClientToAp(): clientHwAddr:" + clientHwAddr + " newApIpAddr:" + newApIpAddr);
+		if (pool == null || clientHwAddr == null || newApIpAddr == null) {
+			log.error("null argument in handoffClientToAp(): pool:" + pool + "clientHwAddr: " + clientHwAddr + " newApIpAddr: " + newApIpAddr);
 			return;
 		}
 		
@@ -288,7 +290,17 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			log.info ("Client " + clientHwAddr + " is already associated with AP " + newApIpAddr);
 			return;
 		}
-
+		
+		/* Verify permissions.
+		 * 
+		 * newAP and oldAP should both fall within 'pool' pool  
+		 */
+		if (! (poolManager.getPoolsForAgent(newApIpAddr).contains(pool)
+				&& poolManager.getPoolsForAgent(currentApIpAddress).contains(pool)) ){
+			log.info ("Agents " + newApIpAddr + " and " + currentApIpAddress + " are not in the same pool: " + pool);
+			return;
+		}
+		
 		// Push flow messages associated with the client
 		try {
 			newAgent.getSwitch().write(lvap.getOFMessageList(), null);
@@ -317,8 +329,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
 	public void handoffClientToAp (String pool, final MACAddress clientHwAddr, final InetAddress newApIpAddr){
-		// Verify pool stuff
-		handoffClientToAp(clientHwAddr, newApIpAddr);
+		handoffClientToApInternal(pool, clientHwAddr, newApIpAddr);
 	}
 	
 	
