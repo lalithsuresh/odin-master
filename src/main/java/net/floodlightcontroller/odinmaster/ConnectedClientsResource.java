@@ -18,9 +18,9 @@ public class ConnectedClientsResource extends ServerResource {
     	
     	Map<MACAddress, OdinClient> connectedClients = new HashMap<MACAddress, OdinClient> ();
     	
-    	for (Entry<MACAddress, OdinClient> e: oc.getClients(PoolManager.GLOBAL_POOL).entrySet()) {
-    		if (!e.getValue().getIpAddress().getHostAddress().equals("0.0.0.0")) {
-    			connectedClients.put(e.getKey(), e.getValue());
+    	for (OdinClient e: oc.getClients(PoolManager.GLOBAL_POOL)) {
+    		if (!e.getIpAddress().getHostAddress().equals("0.0.0.0")) {
+    			connectedClients.put(e.getMacAddress(), e);
     		}
     	}
     	

@@ -47,6 +47,7 @@ public class OdinAgent implements IOdinAgent {
 	private static final String WRITE_HANDLER_SET_VAP = "set_vap";
 	private static final String WRITE_HANDLER_REMOVE_VAP = "remove_vap";
 	private static final String WRITE_HANDLER_SUBSCRIPTIONS = "subscriptions";
+	private static final String WRITE_HANDLER_SEND_PROBE_RESPONSE = "send_probe_response";
 	private static final String ODIN_AGENT_ELEMENT = "odinagent";
 
 	private final int RX_STAT_NUM_PROPERTIES = 5;
@@ -377,5 +378,22 @@ public class OdinAgent implements IOdinAgent {
 			String handlerText) {
 		outBuf.println("WRITE " + ODIN_AGENT_ELEMENT + "." + handlerName + " "
 				+ handlerText);
+	}
+
+
+	@Override
+	public void sendProbeResponse(MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidList) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(clientHwAddr);
+		sb.append(" ");
+		sb.append(bssid);
+		
+		for (String ssid: ssidList) {
+			sb.append(" ");
+			sb.append(ssid);
+		}
+		
+		//System.err.println("Sending out " + sb.toString());
+		invokeWriteHandler(WRITE_HANDLER_SEND_PROBE_RESPONSE, sb.toString());
 	}
 }

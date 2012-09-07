@@ -9,7 +9,7 @@ import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 public class ClientManager {
-	private final ConcurrentMap<MACAddress, OdinClient> odinClientMap = new ConcurrentHashMap<MACAddress, OdinClient> ();
+	private final Map<MACAddress, OdinClient> odinClientMap = new ConcurrentHashMap<MACAddress, OdinClient> ();
 
 	
 	/**

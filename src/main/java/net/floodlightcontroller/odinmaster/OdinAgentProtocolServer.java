@@ -65,8 +65,8 @@ public class OdinAgentProtocolServer implements Runnable {
 		odinMaster.receivePing(odinAgentAddr);
 	}
 	
-	private void receiveProbe (final InetAddress odinAgentAddress, final MACAddress clientHwAddress) {
-		odinMaster.receiveProbe(odinAgentAddress, clientHwAddress);
+	private void receiveProbe (final InetAddress odinAgentAddr, final MACAddress clientHwAddress, final String ssid) {
+		odinMaster.receiveProbe(odinAgentAddr, clientHwAddress, ssid);
 	}
 	
 	private void receivePublish (final MACAddress clientHwAddress, final InetAddress odinAgentAddr, final Map<Long, Long> subscriptionIds) {
@@ -83,7 +83,8 @@ public class OdinAgentProtocolServer implements Runnable {
 		// Agent message handler
 		public void run() {			
 			final String msg = new String(receivedPacket.getData()).trim().toLowerCase();
-			final String msg_type = msg.split(" ")[0];
+			final String[] fields = msg.split(" ");
+			final String msg_type = fields[0];
 			final InetAddress odinAgentAddr = receivedPacket.getAddress();
             
             if (msg_type.equals(ODIN_MSG_PING)) {
@@ -92,17 +93,24 @@ public class OdinAgentProtocolServer implements Runnable {
             else if (msg_type.equals(ODIN_MSG_PROBE)) {
             	// 2nd part of message should contain
             	// the STA's MAC address
-            	final String staAddress = msg.split(" ")[1];
-            	receiveProbe(odinAgentAddr, MACAddress.valueOf(staAddress));
+            	final String staAddress = fields[1];
+            	String ssid = "";
+            	
+            	if (fields.length > 2) {
+            		//SSID is specified in the scan
+            		ssid = msg.substring(ODIN_MSG_PROBE.length() + staAddress.length() + 2);
+            	}
+
+            	receiveProbe(odinAgentAddr, MACAddress.valueOf(staAddress), ssid);
             }
             else if (msg_type.equals(ODIN_MSG_PUBLISH)) {
-            	final String entries[] = msg.split(" ");
-            	final String staAddress = entries[1];
-            	final int count = Integer.parseInt(entries[2]);
+            	final String staAddress = fields[1];
+            	final int count = Integer.parseInt(fields[2]);
             	final Map<Long, Long> matchingIds = new HashMap<Long,Long> ();
      
             	for (int i = 0; i < count; i++) {
-            		matchingIds.put(Long.parseLong(entries[3 + i].split(":")[0]), Long.parseLong(entries[3 + i].split(":")[1]));
+            		matchingIds.put(Long.parseLong(fields[3 + i].split(":")[0]),
+            				Long.parseLong(fields[3 + i].split(":")[1]));
             	}
             	
             	receivePublish(MACAddress.valueOf(staAddress), odinAgentAddr, matchingIds);

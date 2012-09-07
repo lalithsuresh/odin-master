@@ -2,6 +2,7 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import net.floodlightcontroller.odinmaster.OdinClient;
@@ -23,8 +24,10 @@ public interface IOdinApplicationInterface {
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public Map<MACAddress, OdinClient> getClients (String pool);
+	public Set<OdinClient> getClients (String pool);
 	
+	
+	public OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress);
 	
 	/**
 	 * Get a list of Odin agents from the agent tracker

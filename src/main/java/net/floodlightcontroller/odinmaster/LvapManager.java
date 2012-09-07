@@ -3,6 +3,7 @@ package net.floodlightcontroller.odinmaster;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
@@ -16,60 +17,8 @@ import org.openflow.util.U16;
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
-public class LvapManagerImpl implements ILvapManager{
-	
-	private final List<String> ssidList = new ArrayList<String> ();
-	private final byte[] oui = {(byte) 0x00, (byte) 0x1b, (byte) 0xb3};
-	
-	@Override
-	public OdinClient assignLvapWithNullIp(final MACAddress clientHwAddress) {
-		
-		assert (ssidList.size() > 0);
-
-		// Generate random BSSID
-		// FIXME: We need less randomness in the least significant
-		// three bytes.
-		byte[] bssidBytes = clientHwAddress.toBytes();
-		bssidBytes[0] = oui[0];
-		bssidBytes[1] = oui[1];
-		bssidBytes[2] = oui[2];
-		MACAddress bssid = MACAddress.valueOf(bssidBytes);
-		
-		Lvap lvap = new Lvap (bssid, ssidList);
-				
-		try {
-			return new OdinClient(clientHwAddress, InetAddress.getByName("0.0.0.0"), lvap);
-		} catch (UnknownHostException e) {
-			// This should never happen
-			e.printStackTrace();
-			return new OdinClient(clientHwAddress, null, lvap);
-		}
-	}
-	
-
-	@Override
-	public boolean addNetwork(String ssid) {
-		if (!ssidList.contains(ssid)) {
-			ssidList.add(ssid);
-			return true;
-		}
-		
-		return false;
-	}
-
-
-	@Override
-	public boolean removeNetwork(String ssid) {
-		return ssidList.remove(ssid);
-	}
-	
-
-	@Override
-	public int getNumNetworks() {
-		return ssidList.size();
-	}
-	
-	
+public class LvapManager {
+			
 	/**
 	 * Get the default flow table entries that Odin associates
 	 * with each LVAP

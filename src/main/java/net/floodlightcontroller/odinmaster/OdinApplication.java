@@ -2,6 +2,7 @@ package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
 import java.util.Map;
+import java.util.Set;
 
 import net.floodlightcontroller.util.MACAddress;
 
@@ -59,10 +60,13 @@ public abstract class OdinApplication implements Runnable {
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public final Map<MACAddress, OdinClient> getClients () {
+	public final Set<OdinClient> getClients () {
 		return odinApplicationInterface.getClients(pool);		
 	}
 	
+	public final OdinClient getClientFromHwAddress (MACAddress clientHwAddress) {
+		return odinApplicationInterface.getClientFromHwAddress(pool, clientHwAddress);
+	}
 	
 	/**
 	 * Get a list of Odin agents from the agent tracker

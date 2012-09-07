@@ -67,7 +67,7 @@ public class OdinMobilityManager extends OdinApplication {
 	 */
 	private void handler (OdinEventSubscription oes, NotificationCallbackContext cntx) {
 		// Check to see if this is a client we're tracking
-		OdinClient client = getClients().get(cntx.clientHwAddress);
+		OdinClient client = getClientFromHwAddress(cntx.clientHwAddress);
 		
 		if (client == null)
 			return;

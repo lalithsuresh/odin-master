@@ -116,7 +116,7 @@ public class OdinTest {
         clientManager = new ClientManager();
         poolManager = new PoolManager();
         agentManager = new AgentManager(clientManager, poolManager);
-        lvapManager = new LvapManagerImpl();
+        lvapManager = new LvapManager();
         lvapManager.addNetwork("odin");
         odinMaster = new OdinMaster(agentManager, clientManager, lvapManager, poolManager);
         
@@ -128,6 +128,8 @@ public class OdinTest {
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.164"), "pool-2");
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.165"), "pool-2");
 			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.166"), "pool-3");
+			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.167"), "pool-3");
+			poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.167"), "pool-4");
 		} catch (UnknownHostException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

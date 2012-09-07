@@ -101,7 +101,11 @@ public class AgentManager {
 		assert (agentInetAddr != null);
 		readLock.lock();
 		try {
-			final IOdinAgent agentRef = agentMap.get(PoolManager.GLOBAL_POOL).get(agentInetAddr);
+			IOdinAgent agentRef = null;
+			if (agentMap.get(PoolManager.GLOBAL_POOL) != null) {
+				agentRef = agentMap.get(PoolManager.GLOBAL_POOL).get(agentInetAddr);
+			}
+			
 			return agentRef;
 		}
 		finally {
@@ -167,8 +171,7 @@ public class AgentManager {
             			OdinClient trackedClient = clientManager.getClients().get(client.getMacAddress());
             			
             			if (trackedClient == null){
-            				clientManager.addClient(client.getMacAddress(), client.getIpAddress(),
-            									client.getLvap());
+            				clientManager.addClient(client);
             				trackedClient = clientManager.getClients().get(client.getMacAddress());
             			}	
             			

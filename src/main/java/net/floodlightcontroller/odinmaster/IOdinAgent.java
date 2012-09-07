@@ -2,6 +2,7 @@ package net.floodlightcontroller.odinmaster;
 
 
 import java.net.InetAddress;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -10,6 +11,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
+import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinAgentSerializer.class)
 public interface IOdinAgent {
@@ -106,6 +108,8 @@ public interface IOdinAgent {
 	 */
 	public void updateClientLvap(OdinClient oc);
 	
+	
+	public void sendProbeResponse(MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidLists);
 	
 	/**
 	 * Returns timestamp of last heartbeat from agent
