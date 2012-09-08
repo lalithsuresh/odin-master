@@ -330,8 +330,21 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		
 		/* Verify permissions.
 		 * 
-		 * newAP and oldAP should both fall within 'pool' pool  
+		 * - newAP and oldAP should both fall within the same pool.
+		 * - client should be within the same pool as the two APs.
+		 * - invoking application should be operating on the same pools
+		 *  
+		 * By design, this prevents handoffs within the scope of the
+		 * GLOBAL_POOL since that would violate a lot of invariants
+		 * in the rest of the system.
 		 */
+		
+		String clientPool = poolManager.getPoolForClient(client);
+		
+		if (clientPool == null || !clientPool.equals(pool)) {
+			log.error ("Cannot handoff client '" + client.getMacAddress() + "' from " + clientPool + " domain when in domain: '" + pool + "'");
+		}
+		
 		if (! (poolManager.getPoolsForAgent(newApIpAddr).contains(pool)
 				&& poolManager.getPoolsForAgent(currentApIpAddress).contains(pool)) ){
 			log.info ("Agents " + newApIpAddr + " and " + currentApIpAddress + " are not in the same pool: " + pool);
@@ -765,8 +778,6 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         for (OdinApplication app: applicationList) {
         	executor.execute(app);
         }
-        
-        //
 	}
 
 	/** IOFSwitchListener methods **/

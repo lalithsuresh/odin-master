@@ -25,12 +25,12 @@ public class PoolManager {
 		poolToSsidListMap.put(GLOBAL_POOL, new TreeSet<String>());
 		poolToClientSetMap.put(GLOBAL_POOL, new TreeSet<OdinClient>());
 	}
-	
+		
 	public List<String> getPoolsForAgent(InetAddress agentInetAddr) {
 		if (agentToPoolListMap.containsKey(agentInetAddr))
 			return Collections.unmodifiableList(agentToPoolListMap.get(agentInetAddr));
 		else
-			return new ArrayList<String>();
+			return Collections.<String>emptyList();
 	}
 	
 	public void addPoolForAgent(InetAddress agentInetAddr, String pool) {
@@ -39,15 +39,11 @@ public class PoolManager {
 		}
 		else {
 			List<String> poolList = new ArrayList<String>();
-			poolList.add(GLOBAL_POOL);
 			poolList.add(pool);
 			agentToPoolListMap.put(agentInetAddr, poolList);
-		}
-		
-
-		if (!poolToSsidListMap.containsKey(pool)){
-			Set<String> ssidList = new TreeSet<String>();
-			poolToSsidListMap.put(pool, ssidList);			
+			
+			poolToClientSetMap.put(pool, new TreeSet<OdinClient>());
+			poolToSsidListMap.put(pool, new TreeSet<String>());
 		}
 	}
 	
@@ -59,6 +55,7 @@ public class PoolManager {
 	}
 	
 	public boolean addNetworkForPool(String pool, String ssid) {
+		assert (pool != GLOBAL_POOL);
 		/*
 		 * First add to the global pool. If this addition
 		 * is successful, it follows that the SSID is unique,
@@ -74,6 +71,7 @@ public class PoolManager {
 	}
 	
 	public boolean removeNetworkFromPool(String pool, String ssid) {
+		assert (pool != GLOBAL_POOL);
 		/*
 		 * First remove from local pool. If that succeeds, remove
 		 * from the global pool as well.		 * 

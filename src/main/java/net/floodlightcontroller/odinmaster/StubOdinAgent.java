@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.odinmaster.IOdinAgent;
 import net.floodlightcontroller.odinmaster.OdinClient;
+import net.floodlightcontroller.util.MACAddress;
 
 /**
  * 
@@ -86,5 +87,10 @@ public class StubOdinAgent implements IOdinAgent {
 
 	@Override
 	public void updateClientLvap(OdinClient oc) {		
+	}
+
+	@Override
+	public void sendProbeResponse(MACAddress clientHwAddr, MACAddress bssid,
+			Set<String> ssidLists) {
 	}
 }
