@@ -79,10 +79,13 @@ public class OdinClient implements Comparable {
 	public boolean equals(Object obj) {
 		if (!(obj instanceof OdinClient))
 			return false;
+
+		if (obj == this)
+			return true;
 		
 		OdinClient that = (OdinClient) obj;
-		
-		return (this.hwAddress == that.hwAddress);
+			
+		return (this.hwAddress.equals(that.hwAddress));
 	}
 
 	

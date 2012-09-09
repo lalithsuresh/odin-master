@@ -104,10 +104,8 @@ public class PoolManager {
 	public void mapClientToPool(OdinClient client, String pool) {
 		assert (pool != null);
 		assert (pool != GLOBAL_POOL);
-		
-		clientToPoolMap.put(client, pool);
-		
-		String currentPool = clientToPoolMap.get(client);
+						
+		String currentPool = clientToPoolMap.put(client, pool);
 				
 		if (currentPool != null) {
 			poolToClientSetMap.get(currentPool).remove(client);

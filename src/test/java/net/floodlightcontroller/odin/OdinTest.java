@@ -1240,13 +1240,13 @@ public class OdinTest {
     
     /**
      * Test to see if the master provides
-     * the application only the view corresponding
+     * the application only the agent view corresponding
      * to the pools it is associated with
      * 
      * @throws Exception
      */
     @Test
-    public void testApplicationView() throws Exception {
+    public void testApplicationAgentView() throws Exception {
     	
     	InetAddress ipaddr1 = InetAddress.getByName("172.17.2.161");
     	InetAddress ipaddr2 = InetAddress.getByName("172.17.2.162");
@@ -1332,6 +1332,143 @@ public class OdinTest {
     	assertEquals(app.getOdinAgents().containsKey(ipaddr5), true);
     	assertEquals(app.getOdinAgents().containsKey(ipaddr6), true);
     	assertEquals(app.getOdinAgents().containsKey(ipaddr7), true);
+    }
+    
+    /**
+     * Test to see if the master provides
+     * the application only the client view corresponding
+     * to the pools it is associated with
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testApplicationClientView() throws Exception {
+    	
+    	InetAddress ipaddr1 = InetAddress.getByName("172.17.2.161");
+    	InetAddress ipaddr2 = InetAddress.getByName("172.17.2.162");
+    	InetAddress ipaddr3 = InetAddress.getByName("172.17.2.163");
+    	InetAddress ipaddr4 = InetAddress.getByName("172.17.2.164");
+    	InetAddress ipaddr5 = InetAddress.getByName("172.17.2.165");
+    	InetAddress ipaddr6 = InetAddress.getByName("172.17.2.166");
+    	InetAddress ipaddr7 = InetAddress.getByName("172.17.2.167");
+    	
+    	
+		poolManager.addPoolForAgent(ipaddr1, "pool-1");
+		poolManager.addPoolForAgent(ipaddr2, "pool-1");
+		poolManager.addPoolForAgent(ipaddr3, "pool-1");
+		poolManager.addNetworkForPool("pool-1", "odin");
+		
+		poolManager.addPoolForAgent(ipaddr4, "pool-2");
+		poolManager.addPoolForAgent(ipaddr5, "pool-2");
+		poolManager.addNetworkForPool("pool-2", "odin-pool-2");
+		
+		poolManager.addPoolForAgent(ipaddr6, "pool-3");
+		poolManager.addPoolForAgent(ipaddr7, "pool-3");
+		poolManager.addNetworkForPool("pool-3", "odin-pool-3");
+		
+		poolManager.addPoolForAgent(ipaddr7, "pool-4");
+		poolManager.addNetworkForPool("pool-4", "odin-pool-4");
+    	
+    	OdinApplication app = new OdinApplicationImpl();
+    	app.setOdinInterface(odinMaster);
+    	app.setPool("pool-1");
+    	app.run();
+    	
+    	addAgentWithMockSwitch("172.17.2.161", 12345);
+    	addAgentWithMockSwitch("172.17.2.162", 12345);
+    	addAgentWithMockSwitch("172.17.2.163", 12345);
+    	addAgentWithMockSwitch("172.17.2.164", 12345);
+    	addAgentWithMockSwitch("172.17.2.165", 12345);
+    	addAgentWithMockSwitch("172.17.2.166", 12345);
+    	addAgentWithMockSwitch("172.17.2.167", 12345);
+    	
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+    	MACAddress clientMacAddr2 = MACAddress.valueOf("00:00:00:00:00:02");
+    	MACAddress clientMacAddr3 = MACAddress.valueOf("00:00:00:00:00:03");
+    	MACAddress clientMacAddr4 = MACAddress.valueOf("00:00:00:00:00:04");
+    	
+    	odinMaster.receiveProbe(ipaddr1, clientMacAddr1, "odin");
+    	
+    	OdinClient client1 = clientManager.getClient(clientMacAddr1);
+    	
+    	// Should only return pool-1 agents
+    	assertNotNull(client1);
+    	assertEquals(app.getClients().size(), 1);
+    	assertEquals(app.getClients().contains(client1), true);
+    	
+
+    	odinMaster.receiveProbe(ipaddr1, clientMacAddr2, "odin");
+    	odinMaster.receiveProbe(ipaddr1, clientMacAddr3, "odin");
+    	odinMaster.receiveProbe(ipaddr1, clientMacAddr4, "odin");
+    	
+    	OdinClient client2 = clientManager.getClient(clientMacAddr2);
+    	OdinClient client3 = clientManager.getClient(clientMacAddr3);
+    	OdinClient client4 = clientManager.getClient(clientMacAddr4);
+    	
+    	assertEquals(app.getClients().size(), 4);
+    	assertEquals(app.getClients().contains(client1), true);
+    	assertEquals(app.getClients().contains(client2), true);
+    	assertEquals(app.getClients().contains(client3), true);
+    	assertEquals(app.getClients().contains(client4), true);
+    	
+    	// Now switch the app to another pool, but don't move the clients
+    	app.setPool("pool-2");
+
+    	assertEquals(app.getClients().size(), 0);
+    	
+    	// Now move a client to pool-2
+    	odinMaster.receiveProbe(ipaddr4, clientMacAddr1, "odin-pool-2");
+    	assertEquals(app.getClients().size(), 1);
+    	assertEquals(app.getClients().contains(client1), true);
+    	
+    	// Now switch the app back to pool-1 and see if the
+    	// other clients are still in its pool
+    	app.setPool("pool-1");
+    	assertEquals(app.getClients().size(), 3);
+    	assertEquals(app.getClients().contains(client1), false);
+    	assertEquals(app.getClients().contains(client2), true);
+    	assertEquals(app.getClients().contains(client3), true);
+    	assertEquals(app.getClients().contains(client4), true);
+    	
+    	// Now switch to an overlapping pool
+    	app.setPool("pool-4");
+    	assertEquals(app.getClients().size(), 0);
+    	
+    	odinMaster.receiveProbe(ipaddr7, clientMacAddr1, "odin-pool-3");
+    	odinMaster.receiveProbe(ipaddr7, clientMacAddr2, "odin-pool-4");
+    	
+    	assertEquals(app.getClients().contains(client1), false);
+    	assertEquals(app.getClients().contains(client2), true);
+    	assertEquals(app.getClients().contains(client3), false);
+    	assertEquals(app.getClients().contains(client4), false);
+    	
+    	odinMaster.receiveProbe(ipaddr7, clientMacAddr1, "odin-pool-4");
+    	odinMaster.receiveProbe(ipaddr7, clientMacAddr2, "odin-pool-3");
+    	
+    	assertEquals(app.getClients().contains(client1), true);
+    	assertEquals(app.getClients().contains(client2), false);
+    	assertEquals(app.getClients().contains(client3), false);
+    	assertEquals(app.getClients().contains(client4), false);
+    	
+    	app.setPool("pool-3");
+    	
+    	assertEquals(app.getClients().contains(client1), false);
+    	assertEquals(app.getClients().contains(client2), true);
+    	assertEquals(app.getClients().contains(client3), false);
+    	assertEquals(app.getClients().contains(client4), false);
+    	
+    	odinMaster.receiveProbe(ipaddr6, clientMacAddr1, "odin-pool-3");
+    	
+    	assertEquals(app.getClients().contains(client1), true);
+    	assertEquals(app.getClients().contains(client2), true);
+    	assertEquals(app.getClients().contains(client3), false);
+    	assertEquals(app.getClients().contains(client4), false);
+
+    	app.setPool("pool-4");
+    	assertEquals(app.getClients().contains(client1), false);
+    	assertEquals(app.getClients().contains(client2), false);
+    	assertEquals(app.getClients().contains(client3), false);
+    	assertEquals(app.getClients().contains(client4), false);
     }
     
     
