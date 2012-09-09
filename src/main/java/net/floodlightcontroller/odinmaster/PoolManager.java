@@ -36,12 +36,14 @@ public class PoolManager {
 	public void addPoolForAgent(InetAddress agentInetAddr, String pool) {
 		if (agentToPoolListMap.containsKey(agentInetAddr)) {
 			agentToPoolListMap.get(agentInetAddr).add(pool);
-		}
+		}				
 		else {
 			List<String> poolList = new ArrayList<String>();
 			poolList.add(pool);
 			agentToPoolListMap.put(agentInetAddr, poolList);
-			
+		}
+		
+		if (!poolToClientSetMap.containsKey(pool)) {
 			poolToClientSetMap.put(pool, new TreeSet<OdinClient>());
 			poolToSsidListMap.put(pool, new TreeSet<String>());
 		}

@@ -959,7 +959,7 @@ public class OdinTest {
     	poolManager.addPoolForAgent(InetAddress.getByName(ipAddress1), "pool-1");
 		poolManager.addNetworkForPool("pool-1", "odin");
 		
-    	agentManager.setAgentTimeout(1000);
+		agentManager.setAgentTimeout(1000);
     	
     	// Add an agent with no clients associated
     	addAgentWithMockSwitch(ipAddress1, 12345);
@@ -1248,33 +1248,76 @@ public class OdinTest {
     @Test
     public void testApplicationView() throws Exception {
     	
-    	poolManager.addPoolForAgent(InetAddress.getByName("127.0.0.1"), "pool-1");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.161"), "pool-1");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.162"), "pool-1");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.163"), "pool-1");
+    	InetAddress ipaddr1 = InetAddress.getByName("172.17.2.161");
+    	InetAddress ipaddr2 = InetAddress.getByName("172.17.2.162");
+    	InetAddress ipaddr3 = InetAddress.getByName("172.17.2.163");
+    	InetAddress ipaddr4 = InetAddress.getByName("172.17.2.164");
+    	InetAddress ipaddr5 = InetAddress.getByName("172.17.2.165");
+    	InetAddress ipaddr6 = InetAddress.getByName("172.17.2.166");
+    	InetAddress ipaddr7 = InetAddress.getByName("172.17.2.167");
+    	
+    	
+		poolManager.addPoolForAgent(ipaddr1, "pool-1");
+		poolManager.addPoolForAgent(ipaddr2, "pool-1");
+		poolManager.addPoolForAgent(ipaddr3, "pool-1");
 		poolManager.addNetworkForPool("pool-1", "odin");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.164"), "pool-2");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.165"), "pool-2");
-		poolManager.addNetworkForPool("pool-1", "odin-pool-2");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.166"), "pool-3");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.167"), "pool-3");
-		poolManager.addNetworkForPool("pool-1", "odin-pool-3");
-		poolManager.addPoolForAgent(InetAddress.getByName("172.17.2.167"), "pool-4");
-		poolManager.addNetworkForPool("pool-1", "odin-pool-4");
+		
+		poolManager.addPoolForAgent(ipaddr4, "pool-2");
+		poolManager.addPoolForAgent(ipaddr5, "pool-2");
+		poolManager.addNetworkForPool("pool-2", "odin-pool-2");
+		
+		poolManager.addPoolForAgent(ipaddr6, "pool-3");
+		poolManager.addPoolForAgent(ipaddr7, "pool-3");
+		poolManager.addNetworkForPool("pool-3", "odin-pool-3");
+		
+		poolManager.addPoolForAgent(ipaddr7, "pool-4");
+		poolManager.addNetworkForPool("pool-4", "odin-pool-4");
     	
     	OdinApplication app = new OdinApplicationImpl();
     	app.setOdinInterface(odinMaster);
     	app.setPool("pool-1");
     	app.run();
     	
-    	// Should only correspond to pool-1 agents
-    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-1").size());
+    	addAgentWithMockSwitch("172.17.2.161", 12345);
+    	addAgentWithMockSwitch("172.17.2.162", 12345);
+    	addAgentWithMockSwitch("172.17.2.163", 12345);
+    	addAgentWithMockSwitch("172.17.2.164", 12345);
+    	addAgentWithMockSwitch("172.17.2.165", 12345);
+    	addAgentWithMockSwitch("172.17.2.166", 12345);
+    	addAgentWithMockSwitch("172.17.2.167", 12345);
+    	
+    	
+    	// Should only return pool-1 agents
+    	assertEquals(app.getOdinAgents().size(), 3);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), false);
+    	
     	
     	app.setPool("pool-2");
-    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-2").size());
+    	assertEquals(app.getOdinAgents().size(), 2);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), false);
+    	
     	
     	app.setPool("pool-3");
-    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-3").size());
+    	assertEquals(app.getOdinAgents().size(), 2);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), false);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), true);
     	
     	app.setPool("pool-that-doesnt-exist");
     	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-that-doesnt-exist").size());
@@ -1282,6 +1325,13 @@ public class OdinTest {
     	
     	app.setPool(PoolManager.GLOBAL_POOL);
     	assertEquals(app.getOdinAgents().size(), agentManager.getAgents(PoolManager.GLOBAL_POOL).size());
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), true);
+    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), true);
     }
     
     
@@ -1313,7 +1363,6 @@ public class OdinTest {
     	OdinApplication app = new OdinApplicationImpl();
     	app.setOdinInterface(odinMaster);
     	app.setPool("pool-1");
-    	app.run();
     	
     	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");    	
     	addClientToClientManagerSingleSsid(clientMacAddr1, InetAddress.getByName("172.17.2.51"), MACAddress.valueOf("00:00:00:00:11:11"), "odin");

@@ -795,11 +795,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	@Override
 	public void removedSwitch(IOFSwitch sw) {
 		// Not all OF switches are Odin agents. We should immediately remove
-		// any associated Odin agent then.
-		
-		// FIXME: Expose remove API
-//		final InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
-//		agentManager.remove(switchIpAddr);		
+		// any associated Odin agent then.		
+		final InetAddress switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress();
+		agentManager.removeAgent(switchIpAddr);		
 	}
 
 	/**
