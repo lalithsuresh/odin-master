@@ -11,6 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.floodlightcontroller.util.MACAddress;
 
+/**
+ * This class does all the book keeping for Odin's pool-based
+ * state. The master and other components of the code
+ * refer to an instance of this class to enforce
+ * pool constraints. 
+ * 
+ * @author Lalith Suresh <suresh.lalith@gmail.com>
+ *
+ */
 public class PoolManager {
 	
 	static public final String GLOBAL_POOL = "global";
@@ -25,7 +34,15 @@ public class PoolManager {
 		poolToSsidListMap.put(GLOBAL_POOL, new TreeSet<String>());
 		poolToClientSetMap.put(GLOBAL_POOL, new TreeSet<OdinClient>());
 	}
-		
+	
+	
+	/**
+	 * Get the list of pools that the agent belongs to.
+	 * Note: The list will *not* include the global pool.
+	 * 
+	 * @param agentInetAddr agent's address
+	 * @return immutable list of pools that the agent belongs to
+	 */
 	public List<String> getPoolsForAgent(InetAddress agentInetAddr) {
 		if (agentToPoolListMap.containsKey(agentInetAddr))
 			return Collections.unmodifiableList(agentToPoolListMap.get(agentInetAddr));
@@ -33,6 +50,14 @@ public class PoolManager {
 			return Collections.<String>emptyList();
 	}
 	
+	
+	/**
+	 * Place the agent in an additional pool.
+	 *  
+	 * @param agentInetAddr agent's address
+	 * @param pool the pool to add the agent to
+	 * 
+	 */
 	public void addPoolForAgent(InetAddress agentInetAddr, String pool) {
 		if (agentToPoolListMap.containsKey(agentInetAddr)) {
 			agentToPoolListMap.get(agentInetAddr).add(pool);
@@ -49,6 +74,13 @@ public class PoolManager {
 		}
 	}
 	
+	/**
+	 * Get the set of SSIDs that are being
+	 * hosted in a pool
+	 * 
+	 * @param pool 
+	 * @return An immutable set of SSIDs
+	 */
 	public Set<String> getSsidListForPool(String pool){
 		if (!poolToSsidListMap.containsKey(pool)) {
 			return Collections.emptySet();
@@ -56,6 +88,16 @@ public class PoolManager {
 		return Collections.unmodifiableSet(poolToSsidListMap.get(pool));
 	}
 	
+	
+	/**
+	 * Add an SSID to a pool. Will return false if
+	 * the SSID is already being used within some
+	 * other pool.
+	 * 
+	 * @param pool
+	 * @param ssid
+	 * @return true if the SSID was added, false otherwise.
+	 */
 	public boolean addNetworkForPool(String pool, String ssid) {
 		assert (pool != GLOBAL_POOL);
 		/*
@@ -72,11 +114,20 @@ public class PoolManager {
 		return false;
 	}
 	
+	
+	/**
+	 * Removes a network from a pool. Returns false
+	 * if the network name isn't registered with the pool
+	 * 
+	 * @param pool
+	 * @param ssid
+	 * @return true if the ssid could be removed. False otherwise.
+	 */
 	public boolean removeNetworkFromPool(String pool, String ssid) {
 		assert (pool != GLOBAL_POOL);
 		/*
 		 * First remove from local pool. If that succeeds, remove
-		 * from the global pool as well.		 * 
+		 * from the global pool as well.
 		 */
 		if (poolToSsidListMap.get(pool).remove(ssid)) {
 			poolToSsidListMap.get(GLOBAL_POOL).remove(ssid);
@@ -87,7 +138,15 @@ public class PoolManager {
 		return false;
 	}
 	
+	
+	/**
+	 * Generates a BSSID for a client. 
+	 *  
+	 * @param clientHwAddress
+	 * @return BSSID for the client
+	 */
 	public MACAddress generateBssidForClient(MACAddress clientHwAddress) {
+		// XXX: This could be done more intelligently someday
 		byte[] bssidBytes = clientHwAddress.toBytes();
 		bssidBytes[0] = oui[0];
 		bssidBytes[1] = oui[1];
@@ -97,10 +156,24 @@ public class PoolManager {
 		return bssid;
 	}
 	
+	
+	/**
+	 * Returns the total number of unique SSIDs that have been
+	 * registered across all pools.
+	 * 
+	 * @return
+	 */
 	public int getNumNetworks() {
 		return numNetworks;
 	}
 	
+	
+	/**
+	 * Place a client in a particular pool.
+	 *  
+	 * @param client
+	 * @param pool
+	 */
 	public void mapClientToPool(OdinClient client, String pool) {
 		assert (pool != null);
 		assert (pool != GLOBAL_POOL);
@@ -115,6 +188,12 @@ public class PoolManager {
 		poolToClientSetMap.get(pool).add(client);
 	}
 	
+	
+	/**
+	 * Remove a client from a particular pool
+	 * 
+	 * @param client
+	 */
 	public void removeClientPoolMapping(OdinClient client) {
 		String currentPool = clientToPoolMap.get(client);
 		
@@ -124,10 +203,25 @@ public class PoolManager {
 		}
 	}
 	
+	
+	/**
+	 * Get the set of clients that have connected to a
+	 * particular pool
+	 * 
+	 * @param pool
+	 * @return Immutable set of OdinClient instances in that pool
+	 */
 	public Set<OdinClient> getClientsFromPool(String pool) {
 		return Collections.unmodifiableSet(poolToClientSetMap.get(pool));
 	}
 	
+	
+	/**
+	 * Get the pool that the client is connected to 
+	 * 
+	 * @param client
+	 * @return
+	 */
 	public String getPoolForClient(OdinClient client) {
 		return clientToPoolMap.get(client);
 	}
