@@ -407,7 +407,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	
 	
 	/**
-	 * Add a subscription for a particular event defined by oes. cb is
+	 * Add a subscription for a particular event defined by oes. cb
 	 * defines the application specified callback to be invoked during
 	 * notification. If the application plans to delete the subscription,
 	 * later, the onus is upon it to keep track of the subscription
