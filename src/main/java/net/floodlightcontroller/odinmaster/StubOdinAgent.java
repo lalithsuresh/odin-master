@@ -35,7 +35,7 @@ public class StubOdinAgent implements IOdinAgent {
 	}
 
 	@Override
-	public Map<String, Map<String, String>> getRxStats() {
+	public Map<MACAddress, Map<String, String>> getRxStats() {
 		return null;
 	}
 

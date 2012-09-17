@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -46,6 +47,8 @@ import net.floodlightcontroller.packet.DHCP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.restserver.IRestApiService;
+import net.floodlightcontroller.threadpool.IThreadPoolService;
+import net.floodlightcontroller.threadpool.ThreadPool;
 import net.floodlightcontroller.util.MACAddress;
 
 
@@ -61,7 +64,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	protected IRestApiService restApi;
 
 	private IFloodlightProviderService floodlightProvider;
-	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
+	private ScheduledExecutorService executor;
+	private ScheduledExecutorService executorApps = Executors.newScheduledThreadPool(2);
 	
 	private final AgentManager agentManager;
 	private final ClientManager clientManager;	
@@ -70,7 +74,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	
 	private long subscriptionId = 0;
 	private String subscriptionList = "";
-	private int idleLvapTimeout = 30; // Seconds
+	private int idleLvapTimeout = 60; // Seconds
 	
 	private final ConcurrentMap<Long, SubscriptionCallbackTuple> subscriptions = new ConcurrentHashMap<Long, SubscriptionCallbackTuple>();
 
@@ -167,17 +171,20 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			MACAddress bssid = poolManager.generateBssidForClient(clientHwAddress);
 			
 			// FIXME: Sub-optimal. We'll end up generating redundant probe requests
+			Set<String> ssidSet = new TreeSet<String> ();
 			for (String pool: poolManager.getPoolsForAgent(odinAgentAddr)) {
 
 				if (pool.equals(PoolManager.GLOBAL_POOL))
 					continue;
 				
-				executor.execute(new OdinAgentSendProbeResponseRunnable(agent, clientHwAddress, bssid, poolManager.getSsidListForPool(pool)));
+				ssidSet.addAll(poolManager.getSsidListForPool(pool));
 			}
+			
+			executor.execute(new OdinAgentSendProbeResponseRunnable(agent, clientHwAddress, bssid, ssidSet));
 			
 			return;
 		}
-		
+				
 		/*
 		 * Client is scanning for a particular SSID. Verify
 		 * which pool is hosting the SSID, and assign
@@ -583,6 +590,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			throws FloodlightModuleException {
 		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
 		restApi = context.getServiceImpl(IRestApiService.class);
+		IThreadPoolService tp = context.getServiceImpl(IThreadPoolService.class);
+		executor = tp.getScheduledExecutor();
 	}
 
 	@Override
@@ -772,7 +781,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
         }
         
         // Spawn threads for different services
-        executor.execute(new OdinAgentProtocolServer(this, port));
+        executor.execute(new OdinAgentProtocolServer(this, port, executor));
         
         // Spawn applications
         for (OdinApplication app: applicationList) {

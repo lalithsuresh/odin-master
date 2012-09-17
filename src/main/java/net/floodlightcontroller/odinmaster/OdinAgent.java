@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.codehaus.jackson.annotate.JsonValue;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
@@ -22,9 +21,10 @@ import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.util.U16;
 
+import java.util.Collections;
+
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
-import net.floodlightcontroller.core.web.serializers.OdinClientSerializer;
 import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinAgentSerializer.class)
@@ -157,11 +157,10 @@ public class OdinAgent implements IOdinAgent {
 	 * @return A map of stations' MAC addresses to a map of properties and
 	 *         values.
 	 */
-	@JsonValue
-	public Map<String, Map<String, String>> getRxStats() {
+	public Map<MACAddress, Map<String, String>> getRxStats() {
 		String stats = invokeReadHandler(READ_HANDLER_RXSTATS);
-
-		Map<String, Map<String, String>> ret = new HashMap<String, Map<String, String>>();
+		
+		Map<MACAddress, Map<String, String>> ret = new HashMap<MACAddress, Map<String, String>>();
 
 		/*
 		 * We basically get rows like this MAC_ADDR1 prop1:<value> prop2:<value>
@@ -175,7 +174,7 @@ public class OdinAgent implements IOdinAgent {
 				continue;
 			}
 
-			String eth = row[0].toLowerCase();
+			MACAddress eth = MACAddress.valueOf(row[0].toLowerCase());
 
 			Map<String, String> innerMap = new HashMap<String, String>();
 
@@ -183,10 +182,10 @@ public class OdinAgent implements IOdinAgent {
 				innerMap.put(row[i].split(":")[0], row[i].split(":")[1]);
 			}
 
-			ret.put(eth, innerMap);
+			ret.put(eth, Collections.unmodifiableMap(innerMap));
 		}
 
-		return ret;
+		return Collections.unmodifiableMap(ret);
 	}
 
 	
@@ -393,7 +392,8 @@ public class OdinAgent implements IOdinAgent {
 			sb.append(ssid);
 		}
 		
-		//System.err.println("Sending out " + sb.toString());
+		
+
 		invokeWriteHandler(WRITE_HANDLER_SEND_PROBE_RESPONSE, sb.toString());
 	}
 }

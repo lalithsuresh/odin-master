@@ -25,12 +25,13 @@ public class OdinAgentProtocolServer implements Runnable {
 	private final int ODIN_SERVER_PORT;
 	
 	private DatagramSocket controllerSocket;
-	private final ExecutorService executor = Executors.newFixedThreadPool(4);
+	private final ExecutorService executor;
 	private final OdinMaster odinMaster;
 
-	public OdinAgentProtocolServer (OdinMaster om, int port) {
+	public OdinAgentProtocolServer (OdinMaster om, int port, ExecutorService executor) {
 		this.odinMaster = om; 
 		this.ODIN_SERVER_PORT = port;
+		this.executor = executor;
 	}
 	
 	@Override

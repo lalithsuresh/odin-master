@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -48,7 +49,7 @@ public interface IOdinAgent {
 	 *  @return A map of stations' MAC addresses to a map
 	 *  of properties and values.
 	 */
-	public Map<String, Map<String, String>> getRxStats ();
+	public Map<MACAddress, Map<String, String>> getRxStats ();
 	
 	
 	/**

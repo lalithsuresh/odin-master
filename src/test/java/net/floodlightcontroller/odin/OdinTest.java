@@ -23,6 +23,7 @@ import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.test.MockFloodlightProvider;
+import net.floodlightcontroller.core.test.MockThreadPoolService;
 import net.floodlightcontroller.odinmaster.LvapManager;
 import net.floodlightcontroller.odinmaster.NotificationCallback;
 import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
@@ -41,6 +42,7 @@ import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher;
+import net.floodlightcontroller.threadpool.IThreadPoolService;
 import net.floodlightcontroller.util.MACAddress;
 
 import org.easymock.EasyMock;
@@ -119,9 +121,12 @@ public class OdinTest {
         agentManager = new AgentManager(clientManager, poolManager);
         lvapManager = new LvapManager();
         odinMaster = new OdinMaster(agentManager, clientManager, lvapManager, poolManager);
-                
+        MockThreadPoolService tp = new MockThreadPoolService(); 
+        
         cntx.addService(IFloodlightProviderService.class, mockFloodlightProvider);
         cntx.addService(IRestApiService.class, restApi);
+        cntx.addService(IThreadPoolService.class, tp);
+        
         
         try {
 			restApi.init(cntx);
