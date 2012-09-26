@@ -64,9 +64,16 @@ public abstract class OdinApplication implements Runnable {
 		return odinApplicationInterface.getClients(pool);		
 	}
 	
+	
+	/**
+	 * Get the OdinClient type from the client's MACAddress
+	 * 
+	 * @return a OdinClient instance corresponding to clientHwAddress
+	 */
 	public final OdinClient getClientFromHwAddress (MACAddress clientHwAddress) {
 		return odinApplicationInterface.getClientFromHwAddress(pool, clientHwAddress);
 	}
+	
 	
 	public final Map<MACAddress, Map<String, String>> getRxStatsFromAgent (InetAddress agentAddr) {
 		return odinApplicationInterface.getRxStatsFromAgent(pool, agentAddr);

@@ -399,14 +399,32 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		return poolManager.getClientsFromPool(pool);
 	}
 	
+	
+	/**
+	 * Get the OdinClient type from the client's MACAddress
+	 * 
+	 * @param pool that the invoking application corresponds to
+	 * @param clientHwAddress MACAddress of the client
+	 * @return a OdinClient instance corresponding to clientHwAddress
+	 */
 	public OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress) {
 		OdinClient client = clientManager.getClient(clientHwAddress);
 		return (client != null && poolManager.getPoolForClient(client).equals(pool)) ? client : null;
 	}
 	
+	
+	/**
+	 * Retreive RxStats from the agent
+	 * 
+	 * @param pool that the invoking application corresponds to
+	 * @param agentAddr InetAddress of the agent
+	 * 
+	 * @return Key-Value entries of each recorded statistic for each client 
+	 */
 	public Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr) {
 		return agentManager.getAgent(agentAddr).getRxStats();		
 	}
+	
 	
 	/**
 	 * Get a list of Odin agents from the agent tracker

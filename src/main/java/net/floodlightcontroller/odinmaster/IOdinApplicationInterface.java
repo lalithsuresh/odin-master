@@ -27,6 +27,12 @@ public interface IOdinApplicationInterface {
 	public Set<OdinClient> getClients (String pool);
 	
 	
+	/**
+	 * Get the OdinClient type from the client's MACAddress
+	 * 
+	 * @param pool that the invoking application corresponds to
+	 * @return a OdinClient instance corresponding to clientHwAddress
+	 */
 	public OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress);
 	
 	public Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr);
