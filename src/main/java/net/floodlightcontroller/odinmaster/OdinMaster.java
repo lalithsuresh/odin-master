@@ -275,6 +275,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
 	private void handoffClientToApInternal (String pool, final MACAddress clientHwAddr, final InetAddress newApIpAddr){
+		
 		// As an optimisation, we probably need to get the accessing done first,
 		// prime both nodes, and complete a handoff. 
 		
@@ -283,94 +284,97 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 			return;
 		}
 		
-		IOdinAgent newAgent = agentManager.getAgent(newApIpAddr);
+		synchronized (this) {
 		
-		// If new agent doesn't exist, ignore request
-		if (newAgent == null) {
-			log.error("Handoff request ignored: OdinAgent " + newApIpAddr + " doesn't exist");
-			return;
-		}
-		
-		OdinClient client = clientManager.getClient(clientHwAddr);
-		
-		// Ignore request if we don't know the client
-		if (client == null) {
-			log.error("Handoff request ignored: OdinClient " + clientHwAddr + " doesn't exist");
-			return;
-		}
-		
-		Lvap lvap = client.getLvap();
-		
-		assert (lvap != null);
-		
-		/* If the client is connecting for the first time, then it
-		 * doesn't have a VAP associated with it already
-		 */
-		if (lvap.getAgent() == null) {
-			log.info ("Client: " + clientHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
-
+			IOdinAgent newAgent = agentManager.getAgent(newApIpAddr);
+			
+			// If new agent doesn't exist, ignore request
+			if (newAgent == null) {
+				log.error("Handoff request ignored: OdinAgent " + newApIpAddr + " doesn't exist");
+				return;
+			}
+			
+			OdinClient client = clientManager.getClient(clientHwAddr);
+			
+			// Ignore request if we don't know the client
+			if (client == null) {
+				log.error("Handoff request ignored: OdinClient " + clientHwAddr + " doesn't exist");
+				return;
+			}
+			
+			Lvap lvap = client.getLvap();
+			
+			assert (lvap != null);
+			
+			/* If the client is connecting for the first time, then it
+			 * doesn't have a VAP associated with it already
+			 */
+			if (lvap.getAgent() == null) {
+				log.info ("Client: " + clientHwAddr + " connecting for first time. Assigning to: " + newAgent.getIpAddress());
+	
+				// Push flow messages associated with the client
+				try {
+					newAgent.getSwitch().write(lvap.getOFMessageList(), null);
+				} catch (IOException e) {
+					log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
+				}
+	
+				newAgent.addClientLvap(client);
+				lvap.setAgent(newAgent);
+				executor.schedule(new IdleLvapReclaimTask (client), idleLvapTimeout, TimeUnit.SECONDS);
+				return;
+			}
+			
+			/* If the client is already associated with AP-newIpAddr, we ignore
+			 * the request.
+			 */
+			InetAddress currentApIpAddress = lvap.getAgent().getIpAddress();
+			if (currentApIpAddress.getHostAddress().equals(newApIpAddr.getHostAddress())) {
+				log.info ("Client " + clientHwAddr + " is already associated with AP " + newApIpAddr);
+				return;
+			}
+			
+			/* Verify permissions.
+			 * 
+			 * - newAP and oldAP should both fall within the same pool.
+			 * - client should be within the same pool as the two APs.
+			 * - invoking application should be operating on the same pools
+			 *  
+			 * By design, this prevents handoffs within the scope of the
+			 * GLOBAL_POOL since that would violate a lot of invariants
+			 * in the rest of the system.
+			 */
+			
+			String clientPool = poolManager.getPoolForClient(client);
+			
+			if (clientPool == null || !clientPool.equals(pool)) {
+				log.error ("Cannot handoff client '" + client.getMacAddress() + "' from " + clientPool + " domain when in domain: '" + pool + "'");
+			}
+			
+			if (! (poolManager.getPoolsForAgent(newApIpAddr).contains(pool)
+					&& poolManager.getPoolsForAgent(currentApIpAddress).contains(pool)) ){
+				log.info ("Agents " + newApIpAddr + " and " + currentApIpAddress + " are not in the same pool: " + pool);
+				return;
+			}
+			
 			// Push flow messages associated with the client
 			try {
 				newAgent.getSwitch().write(lvap.getOFMessageList(), null);
 			} catch (IOException e) {
 				log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
 			}
-
-			newAgent.addClientLvap(client);
+			
+			/* Client is with another AP. We remove the VAP from
+			 * the current AP of the client, and spawn it on the new one.
+			 * We split the add and remove VAP operations across two threads
+			 * to make it faster. Note that there is a temporary inconsistent 
+			 * state between setting the agent for the client and it actually 
+			 * being reflected in the network 
+			 */
 			lvap.setAgent(newAgent);
-			executor.schedule(new IdleLvapReclaimTask (client), idleLvapTimeout, TimeUnit.SECONDS);
-			return;
+			executor.execute(new OdinAgentLvapAddRunnable(newAgent, client));
+			executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgent(currentApIpAddress), client));
 		}
-		
-		/* If the client is already associated with AP-newIpAddr, we ignore
-		 * the request.
-		 */
-		InetAddress currentApIpAddress = lvap.getAgent().getIpAddress();
-		if (currentApIpAddress.getHostAddress().equals(newApIpAddr.getHostAddress())) {
-			log.info ("Client " + clientHwAddr + " is already associated with AP " + newApIpAddr);
-			return;
-		}
-		
-		/* Verify permissions.
-		 * 
-		 * - newAP and oldAP should both fall within the same pool.
-		 * - client should be within the same pool as the two APs.
-		 * - invoking application should be operating on the same pools
-		 *  
-		 * By design, this prevents handoffs within the scope of the
-		 * GLOBAL_POOL since that would violate a lot of invariants
-		 * in the rest of the system.
-		 */
-		
-		String clientPool = poolManager.getPoolForClient(client);
-		
-		if (clientPool == null || !clientPool.equals(pool)) {
-			log.error ("Cannot handoff client '" + client.getMacAddress() + "' from " + clientPool + " domain when in domain: '" + pool + "'");
-		}
-		
-		if (! (poolManager.getPoolsForAgent(newApIpAddr).contains(pool)
-				&& poolManager.getPoolsForAgent(currentApIpAddress).contains(pool)) ){
-			log.info ("Agents " + newApIpAddr + " and " + currentApIpAddress + " are not in the same pool: " + pool);
-			return;
-		}
-		
-		// Push flow messages associated with the client
-		try {
-			newAgent.getSwitch().write(lvap.getOFMessageList(), null);
-		} catch (IOException e) {
-			log.error("Failed to update switch's flow tables " + newAgent.getSwitch());
-		}
-		
-		/* Client is with another AP. We remove the VAP from
-		 * the current AP of the client, and spawn it on the new one.
-		 * We split the add and remove VAP operations across two threads
-		 * to make it faster. Note that there is a temporary inconsistent 
-		 * state between setting the agent for the client and it actually 
-		 * being reflected in the network 
-		 */
-		lvap.setAgent(newAgent);
-		executor.execute(new OdinAgentLvapAddRunnable(newAgent, client));
-		executor.execute(new OdinAgentLvapRemoveRunnable(agentManager.getAgent(currentApIpAddress), client));
 	}
 	
 	//********* Odin methods to be used by applications (from IOdinApplicationInterface) **********//
