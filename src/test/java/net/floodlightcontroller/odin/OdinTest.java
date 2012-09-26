@@ -4,19 +4,14 @@ import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.bind.annotation.XmlElementDecl.GLOBAL;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
@@ -40,7 +35,6 @@ import net.floodlightcontroller.odinmaster.OdinMobilityManager;
 import net.floodlightcontroller.odinmaster.PoolManager;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
-import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher;
 import net.floodlightcontroller.threadpool.IThreadPoolService;
 import net.floodlightcontroller.util.MACAddress;
@@ -532,7 +526,6 @@ public class OdinTest {
     	String ipAddress5 = "172.17.2.165";
     	
     	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
-    	MACAddress clientMacAddr2 = MACAddress.valueOf("00:00:00:00:00:02");
     	
     	poolManager.addPoolForAgent(InetAddress.getByName(ipAddress1), "pool-1");
 		poolManager.addPoolForAgent(InetAddress.getByName(ipAddress2), "pool-1");
@@ -1059,7 +1052,6 @@ public class OdinTest {
     @Test
     public void testSubscriptionsManyToMany() throws Exception {
     	DummyApplication3 app1 = new DummyApplication3();
-    	DummyApplication3 app2 = new DummyApplication3();
     	app1.setOdinInterface(odinMaster);
     	app1.run(); // This isn't really a thread, but sets up callbacks
     	

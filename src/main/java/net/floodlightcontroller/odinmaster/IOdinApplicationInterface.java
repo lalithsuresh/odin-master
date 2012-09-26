@@ -3,7 +3,6 @@ package net.floodlightcontroller.odinmaster;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
 import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;

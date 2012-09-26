@@ -10,7 +10,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,6 @@ import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +46,6 @@ import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.threadpool.IThreadPoolService;
-import net.floodlightcontroller.threadpool.ThreadPool;
 import net.floodlightcontroller.util.MACAddress;
 
 
@@ -65,7 +62,6 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 
 	private IFloodlightProviderService floodlightProvider;
 	private ScheduledExecutorService executor;
-	private ScheduledExecutorService executorApps = Executors.newScheduledThreadPool(2);
 	
 	private final AgentManager agentManager;
 	private final ClientManager clientManager;	

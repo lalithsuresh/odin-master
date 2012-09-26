@@ -3,7 +3,6 @@ package net.floodlightcontroller.odinmaster;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;

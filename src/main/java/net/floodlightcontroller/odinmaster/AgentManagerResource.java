@@ -1,7 +1,6 @@
 package net.floodlightcontroller.odinmaster;
 
 import java.net.InetAddress;
-import java.util.Map;
 import java.util.Set;
 
 import org.restlet.resource.Get;
