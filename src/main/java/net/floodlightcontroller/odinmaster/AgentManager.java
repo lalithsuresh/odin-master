@@ -24,7 +24,7 @@ import net.floodlightcontroller.odinmaster.OdinMaster;
 
 
 public class AgentManager {
-	private final ConcurrentHashMap<String, ConcurrentHashMap<InetAddress, IOdinAgent>> agentMap = new ConcurrentHashMap<String, ConcurrentHashMap<InetAddress,IOdinAgent>>();
+	private final ConcurrentHashMap<InetAddress, IOdinAgent> agentMap = new ConcurrentHashMap<InetAddress,IOdinAgent>();
     protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
     
     private IFloodlightProviderService floodlightProvider;
@@ -41,7 +41,6 @@ public class AgentManager {
 	public AgentManager (ClientManager clientManager, PoolManager poolManager) {
 		this.clientManager = clientManager;
 		this.poolManager = poolManager;
-		agentMap.put(PoolManager.GLOBAL_POOL, new ConcurrentHashMap<InetAddress, IOdinAgent>() );
 	}
  
     public void setFloodlightProvider(final IFloodlightProviderService provider) {
@@ -65,8 +64,7 @@ public class AgentManager {
 	public boolean isTracked(final InetAddress odinAgentInetAddress) {
 		readLock.lock();
 		try {
-			return agentMap.containsKey(PoolManager.GLOBAL_POOL) &&
-					agentMap.get(PoolManager.GLOBAL_POOL).containsKey(odinAgentInetAddress);
+			return agentMap.containsKey(odinAgentInetAddress);
 		}
 		finally {
 			readLock.unlock();
@@ -78,15 +76,10 @@ public class AgentManager {
 	 * Get the list of agents being tracked for a particular pool
 	 * @return agentMap
 	 */
-	public Map<InetAddress, IOdinAgent> getAgents(final String pool) {
+	public Map<InetAddress, IOdinAgent> getAgents() {
 		readLock.lock();
 		try {
-			if (agentMap.containsKey(pool)) {
-				return Collections.unmodifiableMap(agentMap.get(pool));
-			}
-			else {
-				return new HashMap<InetAddress, IOdinAgent>();
-			}
+			return Collections.unmodifiableMap(agentMap);
 		}
 		finally {
 			readLock.unlock();
@@ -103,12 +96,7 @@ public class AgentManager {
 		assert (agentInetAddr != null);
 		readLock.lock();
 		try {
-			IOdinAgent agentRef = null;
-			if (agentMap.get(PoolManager.GLOBAL_POOL) != null) {
-				agentRef = agentMap.get(PoolManager.GLOBAL_POOL).get(agentInetAddr);
-			}
-			
-			return agentRef;
+			return agentMap.get(agentInetAddr);
 		}
 		finally {
 			readLock.unlock();
@@ -125,10 +113,7 @@ public class AgentManager {
 		writeLock.lock();
 		
 		try {
-			agentMap.get(PoolManager.GLOBAL_POOL).remove(agentInetAddr);
-			for (String pool: poolManager.getPoolsForAgent(agentInetAddr)) {
-				agentMap.get(pool).remove(agentInetAddr);
-			}
+			agentMap.remove(agentInetAddr);
 		}
 		finally {
 			writeLock.unlock();
@@ -226,14 +211,8 @@ public class AgentManager {
             		}
             		
             		writeLock.lock();
-            		try {
-            			for (String pool: poolManager.getPoolsForAgent(odinAgentAddr)) {
-            				if (!agentMap.containsKey(pool)) {
-            					agentMap.put(pool, new ConcurrentHashMap<InetAddress, IOdinAgent>());
-            				}
-            				agentMap.get(pool).put(odinAgentAddr, oa);
-            			}
-            			agentMap.get(PoolManager.GLOBAL_POOL).put(odinAgentAddr, oa);
+            		try {            			
+            			agentMap.put(odinAgentAddr, oa);
             		}
             		finally {
             			writeLock.unlock();

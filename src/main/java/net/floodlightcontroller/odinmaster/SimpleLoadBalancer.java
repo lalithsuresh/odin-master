@@ -44,8 +44,8 @@ public class SimpleLoadBalancer extends OdinApplication {
 				 * 
 				 *  We then build the hearing table.
 				 */
-				for (Entry<InetAddress, IOdinAgent> entry: getOdinAgents().entrySet()) {
-					Map<MACAddress, Map<String, String>> vals = entry.getValue().getRxStats();
+				for (InetAddress agentAddr: getAgents()) {
+					Map<MACAddress, Map<String, String>> vals = getRxStatsFromAgent(agentAddr);
 					
 					for (Entry<MACAddress, Map<String, String>> vals_entry: vals.entrySet()) {
 						
@@ -60,7 +60,7 @@ public class SimpleLoadBalancer extends OdinApplication {
 								if (!hearingMap.containsKey(staHwAddr))
 									hearingMap.put(staHwAddr, new HashSet<InetAddress> ());
 									
-								hearingMap.get(staHwAddr).add(entry.getKey());
+								hearingMap.get(staHwAddr).add(agentAddr);
 							}
 						}
 							

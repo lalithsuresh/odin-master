@@ -69,11 +69,11 @@ public class OdinTest {
      * @throws Exception
      */
     private void addAgentWithMockSwitch (String ipAddress, int port) throws Exception {
-        int size = agentManager.getAgents(PoolManager.GLOBAL_POOL).size();
+        int size = agentManager.getAgents().size();
     	
         agentManager.receivePing(InetAddress.getByName(ipAddress));
         
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), size);
+    	assertEquals(agentManager.getAgents().size(), size);
 
         long id = switchId++;
         // Now register a switch
@@ -95,9 +95,9 @@ public class OdinTest {
         // Let's try again
         agentManager.receivePing(InetAddress.getByName(ipAddress));
         
-        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),size + 1);
+        assertEquals(agentManager.getAgents().size(),size + 1);
         
-        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress)).getSwitch(), sw1);
+        assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress)).getSwitch(), sw1);
     }
     
     private void addClientToClientManagerSingleSsid (MACAddress sta, InetAddress inetAddr, MACAddress lvapBssid, String ssid) {
@@ -193,7 +193,7 @@ public class OdinTest {
         
         // We haven't registered a switch yet, so this should
         // still be zero
-        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),0);
+        assertEquals(agentManager.getAgents().size(),0);
         
         // Now register a switch
     	IOFSwitch sw1;
@@ -213,12 +213,12 @@ public class OdinTest {
         // Let's try again
         agentManager.receivePing(InetAddress.getByName("127.0.0.1"));
         
-        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),1);
+        assertEquals(agentManager.getAgents().size(),1);
         
         // This agent is not listed in the pool manager's list,
         // so it shouldn't get added.
         agentManager.receivePing(InetAddress.getByName("172.17.5.63"));
-        assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(),1);
+        assertEquals(agentManager.getAgents().size(),1);
     }
     
     
@@ -248,7 +248,7 @@ public class OdinTest {
     	// 1. Things shouldn't explode when this is called
     	odinMaster.receiveProbe(null, null, null);
     	
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1, "odin");
     	
@@ -297,7 +297,7 @@ public class OdinTest {
     	// for an unauthorised client which is scanning for the first time.
     	// This can occur as a race condition.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), clientMacAddr3, "odin");
-    	assertNull(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress3)));
+    	assertNull(agentManager.getAgents().get(InetAddress.getByName(ipAddress3)));
     	assertEquals(clientManager.getClients().size(), 2);
     	
     	// 11. Add client3
@@ -309,7 +309,7 @@ public class OdinTest {
     	// for an authorised client which is scanning for the first time.
     	// This can occur as a race condition.
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress3), clientMacAddr3, "odin");
-    	assertNull(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress3)));
+    	assertNull(agentManager.getAgents().get(InetAddress.getByName(ipAddress3)));
     	assertEquals(clientManager.getClients().size(), 3);
     	
     	// 11. Now add agent3
@@ -438,7 +438,7 @@ public class OdinTest {
     	
     	assertEquals(clientManager.getClients().size(), 1);
     	assertNull(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent());
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 3);
+    	assertEquals(agentManager.getAgents().size(), 3);
 
     	///// Sane cases /////
     	
@@ -626,14 +626,14 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1, "odin");
     	
     	// There should be an agent, and a client recorded at the master
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	assertEquals(clientManager.getClients().size(), 1);
 
     	Thread.sleep(1500);
     	
     	// Agent should have been removed by now, and the associated
     	// client should have no agent assigned to it
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Now ping again to revive the agent
@@ -641,14 +641,14 @@ public class OdinTest {
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	
        	// Agent should be setup again
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
  
     	// Client should remain unassigned
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Time it out again
     	Thread.sleep(1500);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// There is no instance for the agent at the master, but we
@@ -661,7 +661,7 @@ public class OdinTest {
     	// Now let the agent ping again. Master will track it, but client
     	// will still remain unassigned
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent(), null);
     	
     	// Now mock a client probe. Client should be assigned now.
@@ -687,7 +687,7 @@ public class OdinTest {
     	addAgentWithMockSwitch(ipAddress2, 12345);
     	
     	assertEquals(clientManager.getClients().size(), 2);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress2));
     	assertEquals(clientManager.getClients().get(clientMacAddr2).getLvap().getSsids().size(), 3);
     	
@@ -721,7 +721,7 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1, "odin");
     	
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), InetAddress.getByName(ipAddress1));
 
     	List<OdinClient> lvapList = new ArrayList<OdinClient>();
@@ -736,8 +736,8 @@ public class OdinTest {
     	addAgentWithMockSwitch(ipAddress2, 12345);
     	odinMaster.receivePing(InetAddress.getByName(ipAddress2));
     	
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress2)).getLvapsRemote().contains(oc), false);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress2)).getLvapsRemote().contains(oc), false);
     	
     	OdinAgentFactory.setMockOdinAgentLvapList(new ArrayList<OdinClient>());
     }
@@ -773,20 +773,20 @@ public class OdinTest {
     	OdinAgentFactory.setMockOdinAgentLvapList(lvapList);
     	
     	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 0);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	
     	addAgentWithMockSwitch(ipAddress1, 12345);
     	odinMaster.receivePing(InetAddress.getByName(ipAddress1));
     	
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
+    	assertEquals(agentManager.getAgents().size(), 1);
+    	assertEquals(agentManager.getAgents().get(InetAddress.getByName(ipAddress1)).getLvapsRemote().contains(oc), true);
     	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 1);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
     	
     	// Time out the agent
     	Thread.sleep(2000);
     	
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 0);
+    	assertEquals(agentManager.getAgents().size(), 0);
     	assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).size(), 1);
     	//assertEquals(odinMaster.getClients(PoolManager.GLOBAL_POOL).get(clientMacAddr1).getLvap().getAgent(), null);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getSsids().size(), 3);
@@ -1293,50 +1293,50 @@ public class OdinTest {
     	
     	
     	// Should only return pool-1 agents
-    	assertEquals(app.getOdinAgents().size(), 3);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), false);
+    	assertEquals(app.getAgents().size(), 3);
+    	assertEquals(app.getAgents().contains(ipaddr1), true);
+    	assertEquals(app.getAgents().contains(ipaddr2), true);
+    	assertEquals(app.getAgents().contains(ipaddr3), true);
+    	assertEquals(app.getAgents().contains(ipaddr4), false);
+    	assertEquals(app.getAgents().contains(ipaddr5), false);
+    	assertEquals(app.getAgents().contains(ipaddr6), false);
+    	assertEquals(app.getAgents().contains(ipaddr7), false);
     	
     	
     	app.setPool("pool-2");
-    	assertEquals(app.getOdinAgents().size(), 2);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), false);
+    	assertEquals(app.getAgents().size(), 2);
+    	assertEquals(app.getAgents().contains(ipaddr1), false);
+    	assertEquals(app.getAgents().contains(ipaddr2), false);
+    	assertEquals(app.getAgents().contains(ipaddr3), false);
+    	assertEquals(app.getAgents().contains(ipaddr4), true);
+    	assertEquals(app.getAgents().contains(ipaddr5), true);
+    	assertEquals(app.getAgents().contains(ipaddr6), false);
+    	assertEquals(app.getAgents().contains(ipaddr7), false);
     	
     	
     	app.setPool("pool-3");
-    	assertEquals(app.getOdinAgents().size(), 2);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), false);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), true);
+    	assertEquals(app.getAgents().size(), 2);
+    	assertEquals(app.getAgents().contains(ipaddr1), false);
+    	assertEquals(app.getAgents().contains(ipaddr2), false);
+    	assertEquals(app.getAgents().contains(ipaddr3), false);
+    	assertEquals(app.getAgents().contains(ipaddr4), false);
+    	assertEquals(app.getAgents().contains(ipaddr5), false);
+    	assertEquals(app.getAgents().contains(ipaddr6), true);
+    	assertEquals(app.getAgents().contains(ipaddr7), true);
     	
     	app.setPool("pool-that-doesnt-exist");
-    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents("pool-that-doesnt-exist").size());
-    	assertEquals(app.getOdinAgents().size(), 0);
+    	assertEquals(app.getAgents().size(), poolManager.getAgentAddrsForPool("pool-that-doesnt-exist").size());
+    	assertEquals(app.getAgents().size(), 0);
     	
     	app.setPool(PoolManager.GLOBAL_POOL);
-    	assertEquals(app.getOdinAgents().size(), agentManager.getAgents(PoolManager.GLOBAL_POOL).size());
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr1), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr2), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr3), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr4), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr5), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr6), true);
-    	assertEquals(app.getOdinAgents().containsKey(ipaddr7), true);
+    	assertEquals(app.getAgents().size(), agentManager.getAgents().size());
+    	assertEquals(app.getAgents().contains(ipaddr1), true);
+    	assertEquals(app.getAgents().contains(ipaddr2), true);
+    	assertEquals(app.getAgents().contains(ipaddr3), true);
+    	assertEquals(app.getAgents().contains(ipaddr4), true);
+    	assertEquals(app.getAgents().contains(ipaddr5), true);
+    	assertEquals(app.getAgents().contains(ipaddr6), true);
+    	assertEquals(app.getAgents().contains(ipaddr7), true);
     }
     
     /**
@@ -1597,7 +1597,7 @@ public class OdinTest {
     	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1, "odin");
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 200);
     	assertEquals(clientManager.getClients().size(), 1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	assertNotNull(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent());
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);    	
 
@@ -1605,7 +1605,7 @@ public class OdinTest {
     	// agent 2, there shouldn't be a handoff
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Sleep enough to get past the hysteresis period
     	Thread.sleep(1001);
@@ -1614,25 +1614,25 @@ public class OdinTest {
     	// Shouldn't happen because the signal strength isn't higher than
     	// the current one4532
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Should now switch
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 211);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now receive a trigger at the first AP, within current hysteresis cycle.
     	// There should be no handoff.
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 220);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now reduce the signal strengtha t AP1, and follow it
     	// with a trigger at AP2. Still no handoff due to hysteresis.
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);    	
+    	assertEquals(agentManager.getAgents().size(), 2);    	
     	
     	// Sleep enough to get past the hysteresis period
     	Thread.sleep(1001);
@@ -1642,14 +1642,14 @@ public class OdinTest {
       	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 200);
     	triggerSingleEvent (clientMacAddr1, agentAddr1, 1, 211);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr1);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	
     	// Now let the client go out of range of the network (exceed idle threshold)
     	Thread.sleep(2001);
     	
     	triggerSingleEvent (clientMacAddr1, agentAddr2, 1, 190);
     	assertEquals(clientManager.getClients().get(clientMacAddr1).getLvap().getAgent().getIpAddress(), agentAddr2);
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 2);
+    	assertEquals(agentManager.getAgents().size(), 2);
     	odinMaster.receivePing(agentAddr1);
     	
     	// Now let the current agent die out, giving the client a null agent
@@ -1657,7 +1657,7 @@ public class OdinTest {
     	odinMaster.receivePing(agentAddr1);
     	Thread.sleep(2001);
 
-    	assertEquals(agentManager.getAgents(PoolManager.GLOBAL_POOL).size(), 1);
+    	assertEquals(agentManager.getAgents().size(), 1);
     	
     	// Whoever hears the client should now be assigned
     	// the client.

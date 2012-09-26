@@ -3,6 +3,7 @@ package net.floodlightcontroller.odinmaster;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,12 +26,14 @@ public class PoolManager {
 	static public final String GLOBAL_POOL = "global";
 	private final byte[] oui = {(byte) 0x00, (byte) 0x1b, (byte) 0xb3};
 	private final Map<InetAddress, List<String>> agentToPoolListMap = new ConcurrentHashMap<InetAddress, List<String>>();
+	private final Map<String, Set<InetAddress>> poolToAgentSetMap = new ConcurrentHashMap<String, Set<InetAddress>>();
 	private final Map<String, Set<String>> poolToSsidListMap = new ConcurrentHashMap<String, Set<String>>();
 	private final Map<String, Set<OdinClient>> poolToClientSetMap = new ConcurrentHashMap<String, Set<OdinClient>> ();
 	private final Map<OdinClient, String> clientToPoolMap = new ConcurrentHashMap<OdinClient, String>();
 	private int numNetworks = 0;
 	
 	public PoolManager () {
+		poolToAgentSetMap.put(GLOBAL_POOL, new HashSet<InetAddress>());
 		poolToSsidListMap.put(GLOBAL_POOL, new TreeSet<String>());
 		poolToClientSetMap.put(GLOBAL_POOL, new TreeSet<OdinClient>());
 	}
@@ -69,9 +72,13 @@ public class PoolManager {
 		}
 		
 		if (!poolToClientSetMap.containsKey(pool)) {
+			poolToAgentSetMap.put(pool, new HashSet<InetAddress>());
 			poolToClientSetMap.put(pool, new TreeSet<OdinClient>());
 			poolToSsidListMap.put(pool, new TreeSet<String>());
 		}
+		
+		poolToAgentSetMap.get(GLOBAL_POOL).add(agentInetAddr);
+		poolToAgentSetMap.get(pool).add(agentInetAddr);
 	}
 	
 	/**
@@ -224,5 +231,11 @@ public class PoolManager {
 	 */
 	public String getPoolForClient(OdinClient client) {
 		return clientToPoolMap.get(client);
+	}
+	
+	public Set<InetAddress> getAgentAddrsForPool(String pool) {
+		Set<InetAddress> ret = poolToAgentSetMap.get(pool);
+		
+		return (ret == null) ? Collections.<InetAddress>emptySet() : ret; 
 	}
 }

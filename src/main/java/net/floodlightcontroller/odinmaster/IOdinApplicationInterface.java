@@ -29,11 +29,13 @@ public interface IOdinApplicationInterface {
 	
 	public OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress);
 	
+	public Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr);
+	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public Map<InetAddress, IOdinAgent> getOdinAgents (String pool);
+	public Set<InetAddress> getAgentAddrs (String pool);
 	
 	
 	/**

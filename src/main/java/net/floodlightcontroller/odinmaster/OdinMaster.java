@@ -404,12 +404,16 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		return (client != null && poolManager.getPoolForClient(client).equals(pool)) ? client : null;
 	}
 	
+	public Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr) {
+		return agentManager.getAgent(agentAddr).getRxStats();		
+	}
+	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public Map<InetAddress, IOdinAgent> getOdinAgents (String pool){
-		return agentManager.getAgents(pool);
+	public Set<InetAddress> getAgentAddrs (String pool){
+		return poolManager.getAgentAddrsForPool(pool);
 	}
 	
 	
@@ -457,8 +461,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		/**
 		 * Should probably have threads to do this
 		 */
-		for (Entry<InetAddress, IOdinAgent> entry : agentManager.getAgents(pool).entrySet()) {
-			pushSubscriptionListToAgent(entry.getValue());
+		for (InetAddress agentAddr : poolManager.getAgentAddrsForPool(pool)) {
+			pushSubscriptionListToAgent(agentManager.getAgent(agentAddr));
 		}
 		
 		return subscriptionId;
@@ -493,8 +497,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		/**
 		 * Should probably have threads to do this
 		 */
-		for (Entry<InetAddress, IOdinAgent> entry : agentManager.getAgents(pool).entrySet()) {
-			pushSubscriptionListToAgent(entry.getValue());
+		for (InetAddress agentAddr : poolManager.getAgentAddrsForPool(pool)) {
+			pushSubscriptionListToAgent(agentManager.getAgent(agentAddr));
 		}
 	}
 	

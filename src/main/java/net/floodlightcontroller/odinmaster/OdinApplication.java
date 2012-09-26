@@ -68,12 +68,16 @@ public abstract class OdinApplication implements Runnable {
 		return odinApplicationInterface.getClientFromHwAddress(pool, clientHwAddress);
 	}
 	
+	public final Map<MACAddress, Map<String, String>> getRxStatsFromAgent (InetAddress agentAddr) {
+		return odinApplicationInterface.getRxStatsFromAgent(pool, agentAddr);
+	}
+	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public final Map<InetAddress, IOdinAgent> getOdinAgents () {
-		return odinApplicationInterface.getOdinAgents(pool);
+	public final Set<InetAddress> getAgents () {
+		return odinApplicationInterface.getAgentAddrs(pool);
 	}
 	
 	
