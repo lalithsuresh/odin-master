@@ -75,6 +75,13 @@ public abstract class OdinApplication implements Runnable {
 	}
 	
 	
+	/**
+	 * Retreive RxStats from the agent
+	 * 
+	 * @param agentAddr InetAddress of the agent
+	 * 
+	 * @return Key-Value entries of each recorded statistic for each client 
+	 */
 	public final Map<MACAddress, Map<String, String>> getRxStatsFromAgent (InetAddress agentAddr) {
 		return odinApplicationInterface.getRxStatsFromAgent(pool, agentAddr);
 	}
