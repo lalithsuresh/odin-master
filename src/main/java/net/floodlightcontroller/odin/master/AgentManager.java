@@ -102,107 +102,116 @@ class AgentManager {
 	protected boolean receivePing(final InetAddress odinAgentAddr) {
 		log.info("Ping message from: " + odinAgentAddr);
 		
-		/* 
-		 * If this is the first time we're hearing from this
-    	 * agent, then keep track of it.
+    	/* 
+    	 * If this is not the first time we're hearing from this
+    	 * agent, then skip.
     	 */
-    	if (odinAgentAddr != null && !isTracked (odinAgentAddr)) {
-    		
-    		/* 
-    		 * If the OFSwitch corresponding to the agent has already
-    		 * registered here, then set it in the OdinAgent object.
-    		 * We avoid registering the agent until its corresponding
-    		 * OFSwitch has done so.
-    		 */
-    		for (IOFSwitch sw: floodlightProvider.getSwitches().values()) {
-    			
-    			/* 
-    			 * We're binding by IP addresses now, because we want to pool
-    			 * an OFSwitch with its corresponding OdinAgent, if any.
-    			 */
-    			String switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress().getHostAddress();
-    			if (switchIpAddr.equals(odinAgentAddr.getHostAddress())) {
-    				
-    				synchronized (this) {
-    					
-    					/* Possible if a thread has waited
-    					 * outside this critical region
-    					 */
-    					if (isTracked(odinAgentAddr))
-    						return false;
-	    				
-	    				IOdinAgent oa = OdinAgentFactory.getOdinAgent();
-	    				oa.setSwitch(sw);
-	            		oa.init(odinAgentAddr);
-	    				oa.setLastHeard(System.currentTimeMillis());
-	    				List<String> poolListForAgent = poolManager.getPoolsForAgent(odinAgentAddr);
-	            		
-	            		/* 
-	            		 * It is possible that the controller is recovering from a failure,
-	            		 * so query the agent to see what LVAPs it hosts, and add them
-	            		 * to our client tracker accordingly.
-	            		 */
-	            		for (OdinClient client: oa.getLvapsRemote()) {
-	            			
-	            			OdinClient trackedClient = clientManager.getClients().get(client.getMacAddress());
-	            			
-	            			if (trackedClient == null){
-	            				clientManager.addClient(client);
-	            				trackedClient = clientManager.getClients().get(client.getMacAddress());
-	            				
-	            				/* 
-	            				 * We need to find the pool the client was previously assigned to.
-	            				 * The only information we have at this point is the
-	            				 * SSID list of the client's LVAP. This can be simplified in
-	            				 * future by adding a "pool" field to the LVAP struct.
-	            				 */
-	            				            				
-	            				for (String pool: poolListForAgent) {
-	            					/* 
-	            					 * Every SSID in every pool is unique, so we need to use only one
-	            					 * of the lvap's SSIDs to find the right pool.
-	            					 */            					
-	            					String ssid = client.getLvap().getSsids().get(0); 
-	            					if (poolManager.getSsidListForPool(pool).contains(ssid)) {
-	            						poolManager.mapClientToPool(trackedClient, pool);
-	            						break;
-	            					}
-	            						
-	            				}
-	            			}	
-	            			
-	            			if (trackedClient.getLvap().getAgent() == null) {
-	            				trackedClient.getLvap().setAgent(oa);
-	            			}
-	            			else if (!trackedClient.getLvap().getAgent().getIpAddress().equals(odinAgentAddr)) {
-	                			/* 
-	                			 * Race condition: 
-	                			 * - client associated at AP1 before the master failure,
-	                			 * - master crashes.
-	                			 * - master re-starts, AP2 connects to the master first.
-	                			 * - client scans, master assigns it to AP2.
-	                			 * - AP1 now joins the master again, but it has the client's LVAP as well.
-	                			 * - Master should now clear the LVAP from AP1.
-	                			 */
-	            				oa.removeClientLvap(client);
-	            			}
-	            		}
-	            		
-	           			agentMap.put(odinAgentAddr, oa);
-    				
-	            		log.info("Adding OdinAgent to map: " + odinAgentAddr.getHostAddress());
-	            		
-	            		/* This TimerTask checks the lastHeard value
-	            		 * of the agent in order to handle failure detection
-	            		 */
-	            		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, agentTimeout/2);
-	            		return true;
-    				}
-    			}
-    		}
+    	if (odinAgentAddr == null || isTracked (odinAgentAddr)) {
+    		return false;
     	}
     	
-    	return false;
+    	IOFSwitch ofSwitch = null;
+    	
+		/* 
+		 * If the OFSwitch corresponding to the agent has already
+		 * registered here, then set it in the OdinAgent object.
+		 * We avoid registering the agent until its corresponding
+		 * OFSwitch has done so.
+		 */
+		for (IOFSwitch sw: floodlightProvider.getSwitches().values()) {
+			
+			/* 
+			 * We're binding by IP addresses now, because we want to pool
+			 * an OFSwitch with its corresponding OdinAgent, if any.
+			 */
+			String switchIpAddr = ((InetSocketAddress) sw.getChannel().getRemoteAddress()).getAddress().getHostAddress();
+			
+			if (switchIpAddr.equals(odinAgentAddr.getHostAddress())) {
+				ofSwitch = sw;
+				break;
+			}
+		}
+		
+		if (ofSwitch == null)
+			return false;
+		
+		synchronized (this) {
+			
+			/* Possible if a thread has waited
+			 * outside this critical region for
+			 * too long
+			 */
+			if (isTracked(odinAgentAddr))
+				return false;
+			
+			IOdinAgent oa = OdinAgentFactory.getOdinAgent();
+			oa.setSwitch(ofSwitch);
+			oa.init(odinAgentAddr);
+			oa.setLastHeard(System.currentTimeMillis());
+			List<String> poolListForAgent = poolManager.getPoolsForAgent(odinAgentAddr);
+    		
+    		/* 
+    		 * It is possible that the controller is recovering from a failure,
+    		 * so query the agent to see what LVAPs it hosts, and add them
+    		 * to our client tracker accordingly.
+    		 */
+    		for (OdinClient client: oa.getLvapsRemote()) {
+    			
+    			OdinClient trackedClient = clientManager.getClients().get(client.getMacAddress());
+    			
+    			if (trackedClient == null){
+    				clientManager.addClient(client);
+    				trackedClient = clientManager.getClients().get(client.getMacAddress());
+    				
+    				/* 
+    				 * We need to find the pool the client was previously assigned to.
+    				 * The only information we have at this point is the
+    				 * SSID list of the client's LVAP. This can be simplified in
+    				 * future by adding a "pool" field to the LVAP struct.
+    				 */
+    				            				
+    				for (String pool: poolListForAgent) {
+    					/* 
+    					 * Every SSID in every pool is unique, so we need to use only one
+    					 * of the lvap's SSIDs to find the right pool.
+    					 */            					
+    					String ssid = client.getLvap().getSsids().get(0); 
+    					if (poolManager.getSsidListForPool(pool).contains(ssid)) {
+    						poolManager.mapClientToPool(trackedClient, pool);
+    						break;
+    					}
+    						
+    				}
+    			}
+    			
+    			if (trackedClient.getLvap().getAgent() == null) {
+    				trackedClient.getLvap().setAgent(oa);
+    			}
+    			else if (!trackedClient.getLvap().getAgent().getIpAddress().equals(odinAgentAddr)) {
+        			/* 
+        			 * Race condition: 
+        			 * - client associated at AP1 before the master failure,
+        			 * - master crashes.
+        			 * - master re-starts, AP2 connects to the master first.
+        			 * - client scans, master assigns it to AP2.
+        			 * - AP1 now joins the master again, but it has the client's LVAP as well.
+        			 * - Master should now clear the LVAP from AP1.
+        			 */
+    				oa.removeClientLvap(client);
+    			}
+    		}
+    		
+   			agentMap.put(odinAgentAddr, oa);
+		
+    		log.info("Adding OdinAgent to map: " + odinAgentAddr.getHostAddress());
+    		
+    		/* This TimerTask checks the lastHeard value
+    		 * of the agent in order to handle failure detection
+    		 */
+    		failureDetectionTimer.scheduleAtFixedRate(new OdinAgentFailureDetectorTask(oa), 1, agentTimeout/2);
+		}
+    	
+		return true;
 	}
 	
 	
