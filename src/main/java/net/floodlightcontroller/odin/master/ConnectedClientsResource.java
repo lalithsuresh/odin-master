@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,8 +1,7 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.util.Set;
 
-import net.floodlightcontroller.odinmaster.OdinMaster;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 

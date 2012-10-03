@@ -1,12 +1,7 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.floodlightcontroller.odinmaster.IOdinAgent;
-import net.floodlightcontroller.odinmaster.OdinAgent;
-import net.floodlightcontroller.odinmaster.StubOdinAgent;
-
 
 public class OdinAgentFactory {
 	

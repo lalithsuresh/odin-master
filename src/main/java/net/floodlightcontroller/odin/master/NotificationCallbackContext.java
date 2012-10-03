@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import net.floodlightcontroller.util.MACAddress;
 

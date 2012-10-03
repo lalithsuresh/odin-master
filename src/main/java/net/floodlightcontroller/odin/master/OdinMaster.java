@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -35,12 +35,6 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.odinmaster.NotificationCallback;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription;
-import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
-import net.floodlightcontroller.odinmaster.SubscriptionCallbackTuple;
-import net.floodlightcontroller.odinmaster.IOdinAgent;
-import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.packet.DHCP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPacket;
@@ -56,7 +50,7 @@ import net.floodlightcontroller.util.MACAddress;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener, IFloodlightService {
+class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener, IFloodlightService {
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
 	protected IRestApiService restApi;
 
@@ -79,14 +73,14 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	static private final String DEFAULT_CLIENT_LIST_FILE = "odin_client_list";  
 	static private final int DEFAULT_PORT = 2819;
 	
-	public OdinMaster(){
+	OdinMaster(){
 		clientManager = new ClientManager();
 		lvapManager = new LvapManager();
 		poolManager = new PoolManager();
 		agentManager = new AgentManager(clientManager, poolManager);
 	}
 	
-	public OdinMaster(AgentManager agentManager, ClientManager clientManager, LvapManager lvapManager, PoolManager poolManager){
+	OdinMaster(AgentManager agentManager, ClientManager clientManager, LvapManager lvapManager, PoolManager poolManager){
 		this.agentManager = agentManager;
 		this.clientManager = clientManager;
 		this.lvapManager = lvapManager;
@@ -101,7 +95,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * 
 	 * @param InetAddress of the agent
 	 */
-	public synchronized void receivePing (final InetAddress odinAgentAddr) {
+	synchronized void receivePing (final InetAddress odinAgentAddr) {
 		if (agentManager.receivePing(odinAgentAddr)) {
 			// if the above leads to a new agent being
 			// tracked, push the current subscription list
@@ -144,7 +138,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param odinAgentAddr InetAddress of agent
 	 * @param clientHwAddress MAC address of client that performed probe scan
 	 */
-	public synchronized void receiveProbe (final InetAddress odinAgentAddr, final MACAddress clientHwAddress, String ssid) {
+	synchronized void receiveProbe (final InetAddress odinAgentAddr, final MACAddress clientHwAddress, String ssid) {
 		
 		if (odinAgentAddr == null
 	    	|| clientHwAddress == null
@@ -233,7 +227,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	 * @param odinAgentAddr agent at which the event was triggered
 	 * @param subscriptionIds list of subscription Ids that the event matches
 	 */
-	public synchronized void receivePublish (final MACAddress clientHwAddress, final InetAddress odinAgentAddr, final Map<Long, Long> subscriptionIds) {
+	synchronized void receivePublish (final MACAddress clientHwAddress, final InetAddress odinAgentAddr, final Map<Long, Long> subscriptionIds) {
 
 		// The check for null clientHwAddress might go away
 		// in the future if we end up having events
@@ -862,7 +856,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		final IOdinAgent oa;
 		final OdinClient oc;
 		
-		public OdinAgentLvapAddRunnable(IOdinAgent newAgent, OdinClient oc) {
+		OdinAgentLvapAddRunnable(IOdinAgent newAgent, OdinClient oc) {
 			this.oa = newAgent;
 			this.oc = oc;
 		}
@@ -877,7 +871,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		final IOdinAgent oa;
 		final OdinClient oc;
 		
-		public OdinAgentLvapRemoveRunnable(IOdinAgent oa, OdinClient oc) {
+		OdinAgentLvapRemoveRunnable(IOdinAgent oa, OdinClient oc) {
 			this.oa = oa;
 			this.oc = oc;
 		}
@@ -894,7 +888,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		final MACAddress bssid;
 		final Set<String> ssidList;
 		
-		public OdinAgentSendProbeResponseRunnable(IOdinAgent oa, MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidList) {
+		OdinAgentSendProbeResponseRunnable(IOdinAgent oa, MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidList) {
 			this.oa = oa;
 			this.clientHwAddr = clientHwAddr;
 			this.bssid = bssid;
@@ -989,7 +983,7 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 	private class IdleLvapReclaimTask implements Runnable {
 		private final OdinClient oc;
 		
-		public IdleLvapReclaimTask(final OdinClient oc) {
+		IdleLvapReclaimTask(final OdinClient oc) {
 			this.oc = oc;
 		}
 		
@@ -1020,4 +1014,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 		}
 	}
 
+	private class SubscriptionCallbackTuple {
+		OdinEventSubscription oes;
+		NotificationCallback cb;
+	}
 }

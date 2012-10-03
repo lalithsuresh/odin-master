@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -6,8 +6,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.odinmaster.IOdinAgent;
-import net.floodlightcontroller.odinmaster.OdinClient;
+import net.floodlightcontroller.odin.master.IOdinAgent;
+import net.floodlightcontroller.odin.master.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 /**
@@ -17,7 +17,7 @@ import net.floodlightcontroller.util.MACAddress;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-public class StubOdinAgent implements IOdinAgent {
+class StubOdinAgent implements IOdinAgent {
 
 	private IOFSwitch sw = null;
 	private InetAddress ipAddr = null;
@@ -45,7 +45,7 @@ public class StubOdinAgent implements IOdinAgent {
 	}
 
 	@Override
-	public ConcurrentSkipListSet<OdinClient> getLvapsRemote() {
+	public Set<OdinClient> getLvapsRemote() {
 		return clientList;
 	}
 

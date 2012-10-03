@@ -1,10 +1,9 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 
-import net.floodlightcontroller.odinmaster.OdinMaster;
 import net.floodlightcontroller.util.MACAddress;
 
 import org.codehaus.jackson.JsonParseException;

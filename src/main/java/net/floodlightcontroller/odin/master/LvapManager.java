@@ -1,9 +1,7 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
@@ -14,7 +12,6 @@ import org.openflow.protocol.action.OFActionDataLayerDestination;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.util.U16;
 
-import net.floodlightcontroller.odinmaster.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 public class LvapManager {

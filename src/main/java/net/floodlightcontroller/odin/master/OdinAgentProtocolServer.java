@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import net.floodlightcontroller.util.MACAddress;
 
-public class OdinAgentProtocolServer implements Runnable {
+class OdinAgentProtocolServer implements Runnable {
     protected static Logger log = LoggerFactory.getLogger(OdinAgentProtocolServer.class);
 
 	// Odin Message types

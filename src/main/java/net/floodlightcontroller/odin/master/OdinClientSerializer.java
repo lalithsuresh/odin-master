@@ -1,9 +1,7 @@
-package net.floodlightcontroller.core.web.serializers;
+package net.floodlightcontroller.odin.master;
 
 import java.io.IOException;
 
-import net.floodlightcontroller.odinmaster.IOdinAgent;
-import net.floodlightcontroller.odinmaster.OdinClient;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.JsonSerializer;

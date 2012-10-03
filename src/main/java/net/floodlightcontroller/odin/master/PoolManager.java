@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import net.floodlightcontroller.util.MACAddress;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-public class PoolManager {
+class PoolManager {
 	
 	static public final String GLOBAL_POOL = "global";
 	private final byte[] oui = {(byte) 0x00, (byte) 0x1b, (byte) 0xb3};
@@ -32,7 +32,7 @@ public class PoolManager {
 	private final Map<OdinClient, String> clientToPoolMap = new ConcurrentHashMap<OdinClient, String>();
 	private int numNetworks = 0;
 	
-	public PoolManager () {
+	PoolManager () {
 		poolToAgentSetMap.put(GLOBAL_POOL, new HashSet<InetAddress>());
 		poolToSsidListMap.put(GLOBAL_POOL, new TreeSet<String>());
 		poolToClientSetMap.put(GLOBAL_POOL, new TreeSet<OdinClient>());
@@ -46,7 +46,7 @@ public class PoolManager {
 	 * @param agentInetAddr agent's address
 	 * @return immutable list of pools that the agent belongs to
 	 */
-	public List<String> getPoolsForAgent(InetAddress agentInetAddr) {
+	List<String> getPoolsForAgent(InetAddress agentInetAddr) {
 		if (agentToPoolListMap.containsKey(agentInetAddr))
 			return Collections.unmodifiableList(agentToPoolListMap.get(agentInetAddr));
 		else
@@ -61,7 +61,7 @@ public class PoolManager {
 	 * @param pool the pool to add the agent to
 	 * 
 	 */
-	public void addPoolForAgent(InetAddress agentInetAddr, String pool) {
+	void addPoolForAgent(InetAddress agentInetAddr, String pool) {
 		if (agentToPoolListMap.containsKey(agentInetAddr)) {
 			agentToPoolListMap.get(agentInetAddr).add(pool);
 		}				
@@ -88,7 +88,7 @@ public class PoolManager {
 	 * @param pool 
 	 * @return An immutable set of SSIDs
 	 */
-	public Set<String> getSsidListForPool(String pool){
+	Set<String> getSsidListForPool(String pool){
 		if (!poolToSsidListMap.containsKey(pool)) {
 			return Collections.emptySet();
 		}
@@ -105,7 +105,7 @@ public class PoolManager {
 	 * @param ssid
 	 * @return true if the SSID was added, false otherwise.
 	 */
-	public boolean addNetworkForPool(String pool, String ssid) {
+	boolean addNetworkForPool(String pool, String ssid) {
 		assert (pool != GLOBAL_POOL);
 		/*
 		 * First add to the global pool. If this addition
@@ -130,7 +130,7 @@ public class PoolManager {
 	 * @param ssid
 	 * @return true if the ssid could be removed. False otherwise.
 	 */
-	public boolean removeNetworkFromPool(String pool, String ssid) {
+	boolean removeNetworkFromPool(String pool, String ssid) {
 		assert (pool != GLOBAL_POOL);
 		/*
 		 * First remove from local pool. If that succeeds, remove
@@ -152,7 +152,7 @@ public class PoolManager {
 	 * @param clientHwAddress
 	 * @return BSSID for the client
 	 */
-	public MACAddress generateBssidForClient(MACAddress clientHwAddress) {
+	MACAddress generateBssidForClient(MACAddress clientHwAddress) {
 		// XXX: This could be done more intelligently someday
 		byte[] bssidBytes = clientHwAddress.toBytes();
 		bssidBytes[0] = oui[0];
@@ -170,7 +170,7 @@ public class PoolManager {
 	 * 
 	 * @return
 	 */
-	public int getNumNetworks() {
+	int getNumNetworks() {
 		return numNetworks;
 	}
 	
@@ -181,7 +181,7 @@ public class PoolManager {
 	 * @param client
 	 * @param pool
 	 */
-	public void mapClientToPool(OdinClient client, String pool) {
+	void mapClientToPool(OdinClient client, String pool) {
 		assert (pool != null);
 		assert (pool != GLOBAL_POOL);
 						
@@ -201,7 +201,7 @@ public class PoolManager {
 	 * 
 	 * @param client
 	 */
-	public void removeClientPoolMapping(OdinClient client) {
+	void removeClientPoolMapping(OdinClient client) {
 		String currentPool = clientToPoolMap.get(client);
 		
 		if (currentPool != null) {
@@ -218,7 +218,7 @@ public class PoolManager {
 	 * @param pool
 	 * @return Immutable set of OdinClient instances in that pool
 	 */
-	public Set<OdinClient> getClientsFromPool(String pool) {
+	Set<OdinClient> getClientsFromPool(String pool) {
 		return Collections.unmodifiableSet(poolToClientSetMap.get(pool));
 	}
 	
@@ -229,11 +229,11 @@ public class PoolManager {
 	 * @param client
 	 * @return
 	 */
-	public String getPoolForClient(OdinClient client) {
+	String getPoolForClient(OdinClient client) {
 		return clientToPoolMap.get(client);
 	}
 	
-	public Set<InetAddress> getAgentAddrsForPool(String pool) {
+	Set<InetAddress> getAgentAddrsForPool(String pool) {
 		Set<InetAddress> ret = poolToAgentSetMap.get(pool);
 		
 		return (ret == null) ? Collections.<InetAddress>emptySet() : ret; 

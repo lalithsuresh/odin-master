@@ -1,14 +1,13 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
-import net.floodlightcontroller.odinmaster.OdinClient;
+import net.floodlightcontroller.odin.master.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
-public class ClientManager {
+class ClientManager {
 	private final Map<MACAddress, OdinClient> odinClientMap = new ConcurrentHashMap<MACAddress, OdinClient> ();
 
 	
@@ -20,7 +19,7 @@ public class ClientManager {
 	 * @param vapBssid Client specific VAP bssid
 	 * @param vapEssid Client specific VAP essid
 	 */
-	public void addClient (final MACAddress clientHwAddress, final InetAddress ipv4Address, final Lvap lvap) {
+	protected void addClient (final MACAddress clientHwAddress, final InetAddress ipv4Address, final Lvap lvap) {
 		odinClientMap.put(clientHwAddress, new OdinClient (clientHwAddress, ipv4Address, lvap));
 	}
 	
@@ -33,7 +32,7 @@ public class ClientManager {
 	 * @param vapBssid Client specific VAP bssid
 	 * @param vapEssid Client specific VAP essid
 	 */
-	public void addClient (final OdinClient oc) {
+	protected void addClient (final OdinClient oc) {
 		odinClientMap.put(oc.getMacAddress(), oc);
 	}
 	
@@ -43,7 +42,7 @@ public class ClientManager {
 	 * 
 	 * @param hwAddress Client's hw address
 	 */
-	public void removeClient (final MACAddress clientHwAddress) {
+	protected void removeClient (final MACAddress clientHwAddress) {
 		odinClientMap.remove(clientHwAddress);
 	}
 	
@@ -51,7 +50,7 @@ public class ClientManager {
 	/**
 	 * Get a client by hw address
 	 */
-	public OdinClient getClient (final MACAddress clientHwAddress) {
+	protected OdinClient getClient (final MACAddress clientHwAddress) {
 		return odinClientMap.get(clientHwAddress);
 	}
 	
@@ -60,7 +59,7 @@ public class ClientManager {
 	 * Get the client Map from the manager
 	 * @return client map
 	 */
-	public Map<MACAddress, OdinClient> getClients () {
+	protected Map<MACAddress, OdinClient> getClients () {
 		return odinClientMap;
 	}
 }

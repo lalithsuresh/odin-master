@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,11 +24,10 @@ import org.openflow.util.U16;
 import java.util.Collections;
 
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
 import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinAgentSerializer.class)
-public class OdinAgent implements IOdinAgent {
+class OdinAgent implements IOdinAgent {
 
 	// Connect to control socket on OdinAgent
 	private Socket odinAgentSocket = null;

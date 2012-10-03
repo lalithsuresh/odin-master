@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import org.restlet.Context;
 import org.restlet.Restlet;
@@ -6,7 +6,7 @@ import org.restlet.routing.Router;
 
 import net.floodlightcontroller.restserver.RestletRoutable;
 
-public class OdinMasterWebRoutable implements RestletRoutable {
+class OdinMasterWebRoutable implements RestletRoutable {
 
 	@Override
 	public String basePath() {

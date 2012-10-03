@@ -1,7 +1,4 @@
-package net.floodlightcontroller.odinmaster;
-
-import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription;
+package net.floodlightcontroller.odin.master;
 
 public interface NotificationCallback {
 

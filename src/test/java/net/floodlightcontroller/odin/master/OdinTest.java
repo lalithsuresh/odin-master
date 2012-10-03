@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odin;
+package net.floodlightcontroller.odin.master;
 
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
@@ -19,20 +19,20 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.test.MockFloodlightProvider;
 import net.floodlightcontroller.core.test.MockThreadPoolService;
-import net.floodlightcontroller.odinmaster.LvapManager;
-import net.floodlightcontroller.odinmaster.NotificationCallback;
-import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
-import net.floodlightcontroller.odinmaster.OdinApplication;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription.Relation;
-import net.floodlightcontroller.odinmaster.AgentManager;
-import net.floodlightcontroller.odinmaster.ClientManager;
-import net.floodlightcontroller.odinmaster.Lvap;
-import net.floodlightcontroller.odinmaster.OdinAgentFactory;
-import net.floodlightcontroller.odinmaster.OdinClient;
-import net.floodlightcontroller.odinmaster.OdinMaster;
-import net.floodlightcontroller.odinmaster.OdinMobilityManager;
-import net.floodlightcontroller.odinmaster.PoolManager;
+
+import net.floodlightcontroller.odin.applications.OdinMobilityManager;
+import net.floodlightcontroller.odin.master.AgentManager;
+import net.floodlightcontroller.odin.master.ClientManager;
+import net.floodlightcontroller.odin.master.Lvap;
+import net.floodlightcontroller.odin.master.LvapManager;
+import net.floodlightcontroller.odin.master.NotificationCallback;
+import net.floodlightcontroller.odin.master.NotificationCallbackContext;
+import net.floodlightcontroller.odin.master.OdinAgentFactory;
+import net.floodlightcontroller.odin.master.OdinClient;
+import net.floodlightcontroller.odin.master.OdinEventSubscription;
+import net.floodlightcontroller.odin.master.OdinEventSubscription.Relation;
+import net.floodlightcontroller.odin.master.OdinMaster;
+import net.floodlightcontroller.odin.master.PoolManager;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
 import net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher;
@@ -1564,7 +1564,7 @@ public class OdinTest {
     @Test   
     public void testMobilityManagerTwoAps() throws Exception {
     	
-    	OdinMobilityManager app = new OdinMobilityManager(1000, 2000, 10);
+    	OdinApplication app = new OdinMobilityManager(1000, 2000, 10);
     	app.setOdinInterface(odinMaster);
     	app.setPool("pool-1");
     	app.run(); // This isn't really a thread, but sets up callbacks

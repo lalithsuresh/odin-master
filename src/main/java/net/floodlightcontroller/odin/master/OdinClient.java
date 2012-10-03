@@ -1,15 +1,11 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
+
+import net.floodlightcontroller.util.MACAddress;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
-import org.openflow.protocol.OFMessage;
-
-import net.floodlightcontroller.core.web.serializers.OdinClientSerializer;
-import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinClientSerializer.class)
 public class OdinClient implements Comparable {

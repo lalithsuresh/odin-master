@@ -1,13 +1,13 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.Set;
 
-import net.floodlightcontroller.odinmaster.OdinClient;
+import net.floodlightcontroller.odin.master.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
-public interface IOdinApplicationInterface {
+interface IOdinApplicationInterface {
 
 	/**
 	 * VAP-Handoff a client to a new AP. This operation is idempotent.
@@ -15,7 +15,7 @@ public interface IOdinApplicationInterface {
 	 * @param newApIpAddr IPv4 address of new access point
 	 * @param hwAddrSta Ethernet address of STA to be handed off
 	 */
-	public void handoffClientToAp (String pool, MACAddress staHwAddr, InetAddress newApIpAddr);
+	void handoffClientToAp (String pool, MACAddress staHwAddr, InetAddress newApIpAddr);
 
 	
 	/**
@@ -23,7 +23,7 @@ public interface IOdinApplicationInterface {
 	 * 
 	 * @return a map of OdinClient objects keyed by HW Addresses
 	 */
-	public Set<OdinClient> getClients (String pool);
+	Set<OdinClient> getClients (String pool);
 	
 	
 	/**
@@ -32,15 +32,15 @@ public interface IOdinApplicationInterface {
 	 * @param pool that the invoking application corresponds to
 	 * @return a OdinClient instance corresponding to clientHwAddress
 	 */
-	public OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress);
+	OdinClient getClientFromHwAddress (String pool, MACAddress clientHwAddress);
 	
-	public Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr);
+	Map<MACAddress, Map<String, String>> getRxStatsFromAgent (String pool, InetAddress agentAddr);
 	
 	/**
 	 * Get a list of Odin agents from the agent tracker
 	 * @return a map of OdinAgent objects keyed by Ipv4 addresses
 	 */
-	public Set<InetAddress> getAgentAddrs (String pool);
+	Set<InetAddress> getAgentAddrs (String pool);
 	
 	
 	/**
@@ -53,7 +53,7 @@ public interface IOdinApplicationInterface {
 	 * @param oes the susbcription
 	 * @param cb the callback
 	 */
-	public long registerSubscription (String pool, OdinEventSubscription oes, NotificationCallback cb);
+	long registerSubscription (String pool, OdinEventSubscription oes, NotificationCallback cb);
 	
 	
 	/**
@@ -62,7 +62,7 @@ public interface IOdinApplicationInterface {
 	 * @param id subscription id to remove
 	 * @return
 	 */
-	public void unregisterSubscription (String pool, long id);
+	void unregisterSubscription (String pool, long id);
 	
 	
 	/**
@@ -71,7 +71,7 @@ public interface IOdinApplicationInterface {
 	 * @param networkName
 	 * @return true if the network could be added, false otherwise
 	 */
-	public boolean addNetwork (String pool, String ssid);
+	boolean addNetwork (String pool, String ssid);
 	
 	
 	/**
@@ -80,5 +80,5 @@ public interface IOdinApplicationInterface {
 	 * @param networkName
 	 * @return true if the network could be removed, false otherwise
 	 */
-	public boolean removeNetwork (String pool, String ssid);
+	boolean removeNetwork (String pool, String ssid);
 }

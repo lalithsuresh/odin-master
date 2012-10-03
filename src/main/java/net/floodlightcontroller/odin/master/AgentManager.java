@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -14,13 +14,13 @@ import org.slf4j.LoggerFactory;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.odinmaster.IOdinAgent;
-import net.floodlightcontroller.odinmaster.OdinAgentFactory;
-import net.floodlightcontroller.odinmaster.OdinClient;
-import net.floodlightcontroller.odinmaster.OdinMaster;
+import net.floodlightcontroller.odin.master.IOdinAgent;
+import net.floodlightcontroller.odin.master.OdinAgentFactory;
+import net.floodlightcontroller.odin.master.OdinClient;
+import net.floodlightcontroller.odin.master.OdinMaster;
 
 
-public class AgentManager {
+class AgentManager {
 	private final ConcurrentHashMap<InetAddress, IOdinAgent> agentMap = new ConcurrentHashMap<InetAddress,IOdinAgent>();
     protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
     
@@ -31,17 +31,17 @@ public class AgentManager {
 	private final Timer failureDetectionTimer = new Timer();
 	private int agentTimeout = 6000;
 
-	public AgentManager (ClientManager clientManager, PoolManager poolManager) {
+	protected AgentManager (ClientManager clientManager, PoolManager poolManager) {
 		this.clientManager = clientManager;
 		this.poolManager = poolManager;
 	}
  
-    public void setFloodlightProvider(final IFloodlightProviderService provider) {
+	protected void setFloodlightProvider(final IFloodlightProviderService provider) {
     	floodlightProvider = provider;
     }
     
     
-    public void setAgentTimeout (final int timeout) {
+    protected void setAgentTimeout (final int timeout) {
     	assert (timeout > 0);
     	agentTimeout = timeout;
     }
@@ -54,7 +54,7 @@ public class AgentManager {
 	 * @param odinAgentInetAddress
 	 * @return true if the agent is being tracked
 	 */
-	public boolean isTracked(final InetAddress odinAgentInetAddress) {
+	protected boolean isTracked(final InetAddress odinAgentInetAddress) {
 		return agentMap.containsKey(odinAgentInetAddress);
 	}
 	
@@ -63,7 +63,7 @@ public class AgentManager {
 	 * Get the list of agents being tracked for a particular pool
 	 * @return agentMap
 	 */
-	public Map<InetAddress, IOdinAgent> getAgents() {
+	protected Map<InetAddress, IOdinAgent> getAgents() {
 		return Collections.unmodifiableMap(agentMap);
 	}
 	
@@ -73,7 +73,7 @@ public class AgentManager {
 	 * 
 	 * @param agentInetAddr
 	 */
-	public IOdinAgent getAgent(final InetAddress agentInetAddr) {
+	protected IOdinAgent getAgent(final InetAddress agentInetAddr) {
 		assert (agentInetAddr != null);
 		return agentMap.get(agentInetAddr);
 	}
@@ -84,7 +84,7 @@ public class AgentManager {
 	 * 
 	 * @param agentInetAddr
 	 */
-	public void removeAgent(InetAddress agentInetAddr) {
+	protected void removeAgent(InetAddress agentInetAddr) {
 		synchronized (this) {
 			agentMap.remove(agentInetAddr);
 		}
@@ -99,7 +99,7 @@ public class AgentManager {
      * @param odinAgentAddr
      * @return true if an agent was added
      */
-	public boolean receivePing(final InetAddress odinAgentAddr) {
+	protected boolean receivePing(final InetAddress odinAgentAddr) {
 		log.info("Ping message from: " + odinAgentAddr);
 		
 		/* 
@@ -209,7 +209,7 @@ public class AgentManager {
 	private class OdinAgentFailureDetectorTask extends TimerTask {
 		private final IOdinAgent agent;
 		
-		public OdinAgentFailureDetectorTask (final IOdinAgent oa){
+		OdinAgentFailureDetectorTask (final IOdinAgent oa){
 			this.agent = oa;
 		}
 		

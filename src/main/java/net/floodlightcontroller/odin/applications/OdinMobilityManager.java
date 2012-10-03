@@ -1,15 +1,15 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.applications;
 
-import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import net.floodlightcontroller.odinmaster.NotificationCallback;
-import net.floodlightcontroller.odinmaster.NotificationCallbackContext;
-import net.floodlightcontroller.odinmaster.OdinApplication;
-import net.floodlightcontroller.odinmaster.OdinClient;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription;
-import net.floodlightcontroller.odinmaster.OdinEventSubscription.Relation;
+import net.floodlightcontroller.odin.master.OdinApplication;
+
+import net.floodlightcontroller.odin.master.NotificationCallback;
+import net.floodlightcontroller.odin.master.NotificationCallbackContext;
+import net.floodlightcontroller.odin.master.OdinClient;
+import net.floodlightcontroller.odin.master.OdinEventSubscription;
+import net.floodlightcontroller.odin.master.OdinEventSubscription.Relation;
 import net.floodlightcontroller.util.MACAddress;
 
 public class OdinMobilityManager extends OdinApplication {

@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,12 +20,16 @@ public class Lvap {
 	private IOdinAgent odinAgent;
 	private List<OFMessage> msgList = new ArrayList<OFMessage>();
 	
-	public Lvap(MACAddress bssid, List<String> ssidList) {
+	Lvap(MACAddress bssid, List<String> ssidList) {
 		lvapBssid = bssid;
 		lvapSsids = ssidList;
 	}
 	
-	// ***** Getters and setters for the above. ***** //
+	protected void setAgent(IOdinAgent agent) {
+		this.odinAgent = agent;
+	}
+	
+	// ***** Getters and setters ***** //
 	
 	public MACAddress getBssid() {
 		return lvapBssid;
@@ -37,10 +41,6 @@ public class Lvap {
 	
 	public IOdinAgent getAgent() {
 		return odinAgent;
-	}
-	
-	public void setAgent(IOdinAgent agent) {
-		this.odinAgent = agent;
 	}
 	
 	public List<OFMessage> getOFMessageList() {

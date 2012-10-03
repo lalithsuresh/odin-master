@@ -1,17 +1,13 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.master;
 
 
 import java.net.InetAddress;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.web.serializers.OdinAgentSerializer;
 import net.floodlightcontroller.util.MACAddress;
 
 @JsonSerialize(using=OdinAgentSerializer.class)

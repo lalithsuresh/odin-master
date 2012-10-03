@@ -1,4 +1,4 @@
-package net.floodlightcontroller.odinmaster;
+package net.floodlightcontroller.odin.applications;
 
 import java.net.InetAddress;
 import java.util.HashMap;
@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import net.floodlightcontroller.odin.master.OdinApplication;
+import net.floodlightcontroller.odin.master.OdinClient;
 import net.floodlightcontroller.util.MACAddress;
 
 public class SimpleLoadBalancer extends OdinApplication {
