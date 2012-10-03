@@ -834,76 +834,8 @@ class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicati
 		agentManager.removeAgent(switchIpAddr);		
 	}
 
-	/**
-	 * Push the subscription list to the agent
-	 * 
-	 * @param oa agent to push subscription list to
-	 */
-	private void pushSubscriptionListToAgent (final IOdinAgent oa) {
-		oa.setSubscriptions(subscriptionList);
-	}
-
-	private void updateAgentLastHeard (InetAddress odinAgentAddr) {
-		IOdinAgent agent = agentManager.getAgent(odinAgentAddr);
-		
-		if (agent != null) {
-			// Update last-heard for failure detection
-			agent.setLastHeard(System.currentTimeMillis());
-		}
-	}
-	
-	private class OdinAgentLvapAddRunnable implements Runnable {
-		final IOdinAgent oa;
-		final OdinClient oc;
-		
-		OdinAgentLvapAddRunnable(IOdinAgent newAgent, OdinClient oc) {
-			this.oa = newAgent;
-			this.oc = oc;
-		}
-		@Override
-		public void run() {
-			oa.addClientLvap(oc);
-		}
-		
-	}
-	
-	private class OdinAgentLvapRemoveRunnable implements Runnable {
-		final IOdinAgent oa;
-		final OdinClient oc;
-		
-		OdinAgentLvapRemoveRunnable(IOdinAgent oa, OdinClient oc) {
-			this.oa = oa;
-			this.oc = oc;
-		}
-		@Override
-		public void run() {
-			oa.removeClientLvap(oc);
-		}
-		
-	}
-	
-	private class OdinAgentSendProbeResponseRunnable implements Runnable {
-		final IOdinAgent oa;
-		final MACAddress clientHwAddr;
-		final MACAddress bssid;
-		final Set<String> ssidList;
-		
-		OdinAgentSendProbeResponseRunnable(IOdinAgent oa, MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidList) {
-			this.oa = oa;
-			this.clientHwAddr = clientHwAddr;
-			this.bssid = bssid;
-			this.ssidList = ssidList;
-		}
-		@Override
-		public void run() {
-			oa.sendProbeResponse(clientHwAddr, bssid, ssidList);
-		}
-		
-	}
-
 	@Override
-	public Command receive(
-			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
+	public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
 		
 		// We use this to pick up DHCP response frames
 		// and update a client's IP address details accordingly
@@ -978,6 +910,73 @@ class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicati
 	@Override
 	public boolean isCallbackOrderingPrereq(OFType type, String name) {
 		return false;
+	}
+	
+	/**
+	 * Push the subscription list to the agent
+	 * 
+	 * @param oa agent to push subscription list to
+	 */
+	private void pushSubscriptionListToAgent (final IOdinAgent oa) {
+		oa.setSubscriptions(subscriptionList);
+	}
+
+	private void updateAgentLastHeard (InetAddress odinAgentAddr) {
+		IOdinAgent agent = agentManager.getAgent(odinAgentAddr);
+		
+		if (agent != null) {
+			// Update last-heard for failure detection
+			agent.setLastHeard(System.currentTimeMillis());
+		}
+	}
+	
+	private class OdinAgentLvapAddRunnable implements Runnable {
+		final IOdinAgent oa;
+		final OdinClient oc;
+		
+		OdinAgentLvapAddRunnable(IOdinAgent newAgent, OdinClient oc) {
+			this.oa = newAgent;
+			this.oc = oc;
+		}
+		@Override
+		public void run() {
+			oa.addClientLvap(oc);
+		}
+		
+	}
+	
+	private class OdinAgentLvapRemoveRunnable implements Runnable {
+		final IOdinAgent oa;
+		final OdinClient oc;
+		
+		OdinAgentLvapRemoveRunnable(IOdinAgent oa, OdinClient oc) {
+			this.oa = oa;
+			this.oc = oc;
+		}
+		@Override
+		public void run() {
+			oa.removeClientLvap(oc);
+		}
+		
+	}
+	
+	private class OdinAgentSendProbeResponseRunnable implements Runnable {
+		final IOdinAgent oa;
+		final MACAddress clientHwAddr;
+		final MACAddress bssid;
+		final Set<String> ssidList;
+		
+		OdinAgentSendProbeResponseRunnable(IOdinAgent oa, MACAddress clientHwAddr, MACAddress bssid, Set<String> ssidList) {
+			this.oa = oa;
+			this.clientHwAddr = clientHwAddr;
+			this.bssid = bssid;
+			this.ssidList = ssidList;
+		}
+		@Override
+		public void run() {
+			oa.sendProbeResponse(clientHwAddr, bssid, ssidList);
+		}
+		
 	}
 	
 	private class IdleLvapReclaimTask implements Runnable {
