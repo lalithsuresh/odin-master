@@ -50,7 +50,7 @@ import net.floodlightcontroller.util.MACAddress;
  * @author Lalith Suresh <suresh.lalith@gmail.com>
  *
  */
-class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener, IFloodlightService {
+public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicationInterface, IOFMessageListener, IFloodlightService {
 	protected static Logger log = LoggerFactory.getLogger(OdinMaster.class);
 	protected IRestApiService restApi;
 
@@ -73,14 +73,14 @@ class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinApplicati
 	static private final String DEFAULT_CLIENT_LIST_FILE = "odin_client_list";  
 	static private final int DEFAULT_PORT = 2819;
 	
-	OdinMaster(){
+	public OdinMaster(){
 		clientManager = new ClientManager();
 		lvapManager = new LvapManager();
 		poolManager = new PoolManager();
 		agentManager = new AgentManager(clientManager, poolManager);
 	}
 	
-	OdinMaster(AgentManager agentManager, ClientManager clientManager, LvapManager lvapManager, PoolManager poolManager){
+	public OdinMaster(AgentManager agentManager, ClientManager clientManager, LvapManager lvapManager, PoolManager poolManager){
 		this.agentManager = agentManager;
 		this.clientManager = clientManager;
 		this.lvapManager = lvapManager;
