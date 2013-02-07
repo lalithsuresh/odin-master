@@ -29,16 +29,11 @@ public class LvapManager {
 			OFMatch match = new OFMatch();
 			match.fromString("in_port=2,dl_type=0x0800,nw_src=" + inetAddr.getHostAddress());
 			
-			OFActionDataLayerDestination actionDlMode = new OFActionDataLayerDestination();
-			actionDlMode.setDataLayerAddress(MACAddress.valueOf("00:30:48:d1:42:37").toBytes());
-			actionDlMode.setLength((short) OFActionDataLayerDestination.MINIMUM_LENGTH);
-			
 			OFActionOutput actionOutput = new OFActionOutput ();
 			actionOutput.setPort((short) 1);
 			actionOutput.setLength((short) OFActionOutput.MINIMUM_LENGTH);
 			
 			List<OFAction> actionList = new ArrayList<OFAction>();
-			actionList.add(actionDlMode);
 			actionList.add(actionOutput);
 			
 		
@@ -48,8 +43,7 @@ public class LvapManager {
 			flow1.setIdleTimeout((short) 0);
 			flow1.setActions(actionList);
 	        flow1.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH
-	        		+ OFActionOutput.MINIMUM_LENGTH
-	        		+ OFActionDataLayerDestination.MINIMUM_LENGTH));
+	        		+ OFActionOutput.MINIMUM_LENGTH));	
 		}
 		OFFlowMod flow2 = new OFFlowMod();
 		{
