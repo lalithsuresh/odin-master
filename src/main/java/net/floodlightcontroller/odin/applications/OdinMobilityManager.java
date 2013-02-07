@@ -3,17 +3,21 @@ package net.floodlightcontroller.odin.applications;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.floodlightcontroller.odin.master.OdinApplication;
 
 import net.floodlightcontroller.odin.master.NotificationCallback;
 import net.floodlightcontroller.odin.master.NotificationCallbackContext;
 import net.floodlightcontroller.odin.master.OdinClient;
 import net.floodlightcontroller.odin.master.OdinEventSubscription;
+import net.floodlightcontroller.odin.master.OdinMaster;
 import net.floodlightcontroller.odin.master.OdinEventSubscription.Relation;
 import net.floodlightcontroller.util.MACAddress;
 
 public class OdinMobilityManager extends OdinApplication {
-	
+	protected static Logger log = LoggerFactory.getLogger(OdinMobilityManager.class);	
 	private ConcurrentMap<MACAddress, MobilityStats> clientMap = new ConcurrentHashMap<MACAddress, MobilityStats> ();
 	private final long HYSTERESIS_THRESHOLD; // milliseconds
 	private final long IDLE_CLIENT_THRESHOLD; // milliseconds
@@ -37,7 +41,7 @@ public class OdinMobilityManager extends OdinApplication {
 	 */
 	private void init () {
 		OdinEventSubscription oes = new OdinEventSubscription();
-		oes.setSubscription("*", "signal", Relation.GREATER_THAN, 190);		
+		oes.setSubscription("00:0B:6B:84:B2:87", "signal", Relation.GREATER_THAN, 160);		
 		
 		NotificationCallback cb = new NotificationCallback() {
 			
@@ -68,6 +72,8 @@ public class OdinMobilityManager extends OdinApplication {
 	private void handler (OdinEventSubscription oes, NotificationCallbackContext cntx) {
 		// Check to see if this is a client we're tracking
 		OdinClient client = getClientFromHwAddress(cntx.clientHwAddress);
+		log.debug("Mobility manager: notification from " + cntx.clientHwAddress
+				+ " from agent " + cntx.agent.getIpAddress() + " val: " + cntx.value + " at " + System.currentTimeMillis());
 		
 		if (client == null)
 			return;
@@ -83,6 +89,8 @@ public class OdinMobilityManager extends OdinApplication {
 		
 		// If client hasn't been assigned an agent, do so
 		if (client.getLvap().getAgent() == null) {
+			log.info("Mobility manager: handing off client " + cntx.clientHwAddress
+									+ " to agent " + cntx.agent.getIpAddress() + " at " + System.currentTimeMillis());
 			handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 			updateStatsWithReassignment (stats, cntx.value, currentTimestamp); 
 			return;
@@ -90,6 +98,8 @@ public class OdinMobilityManager extends OdinApplication {
 		
 		// Check for out-of-range client
 		if ((currentTimestamp - stats.lastHeard) > IDLE_CLIENT_THRESHOLD) {
+			log.info("Mobility manager: handing off client " + cntx.clientHwAddress
+					+ " to agent " + cntx.agent.getIpAddress() + " at " + System.currentTimeMillis());
 			handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 			updateStatsWithReassignment (stats, cntx.value, currentTimestamp);	
 			return;
@@ -108,6 +118,8 @@ public class OdinMobilityManager extends OdinApplication {
 			
 			// We're outside the hysteresis period, so compare signal strengths for a handoff
 			if (cntx.value >= stats.signalStrength + SIGNAL_STRENGTH_THRESHOLD) {
+				log.info("Mobility manager: handing off client " + cntx.clientHwAddress
+						+ " to agent " + cntx.agent.getIpAddress() + " at " + System.currentTimeMillis());
 				handoffClientToAp(cntx.clientHwAddress, cntx.agent.getIpAddress());
 				updateStatsWithReassignment (stats, cntx.value, currentTimestamp);
 				return;
