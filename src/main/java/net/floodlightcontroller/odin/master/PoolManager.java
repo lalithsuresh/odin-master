@@ -206,6 +206,7 @@ class PoolManager {
 		
 		if (currentPool != null) {
 			poolToClientSetMap.get(currentPool).remove(client);
+			poolToClientSetMap.get(GLOBAL_POOL).remove(client);
 			clientToPoolMap.remove(client);
 		}
 	}

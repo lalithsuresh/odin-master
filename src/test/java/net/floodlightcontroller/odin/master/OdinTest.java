@@ -395,6 +395,39 @@ public class OdinTest {
     	assertEquals(clientManager.getClients().size(), 0);
     	assertEquals(poolManager.getClientsFromPool(PoolManager.GLOBAL_POOL).size(), 0);
     }
+    
+    /**
+     * Test to see if client removal from a pool works
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testReceiveClientDisassoc() throws Exception {
+    	String ipAddress1 = "172.17.2.161";
+    	MACAddress clientMacAddr1 = MACAddress.valueOf("00:00:00:00:00:01");
+
+    	
+    	poolManager.addPoolForAgent(InetAddress.getByName(ipAddress1), "pool-1");
+		poolManager.addNetworkForPool("pool-1", "odin-1");
+		
+    	addAgentWithMockSwitch(ipAddress1, 12345);
+    	
+    	odinMaster.receiveProbe(InetAddress.getByName(ipAddress1), clientMacAddr1, "odin-1");
+    	
+    	assertEquals(clientManager.getClients().size(), 1);
+    	
+    	OdinClient oc = clientManager.getClients().get(clientMacAddr1);
+    	
+    	assertEquals(poolManager.getClientsFromPool("pool-1").contains(oc), true);
+    	assertEquals(poolManager.getClientsFromPool(PoolManager.GLOBAL_POOL).contains(oc), true);
+    	assertEquals(poolManager.getPoolForClient(oc), "pool-1");
+
+    	poolManager.removeClientPoolMapping(oc);
+    	
+    	assertEquals(poolManager.getClientsFromPool("pool-1").contains(oc), false);
+    	assertEquals(poolManager.getClientsFromPool(PoolManager.GLOBAL_POOL).contains(oc), false);
+    	assertEquals(poolManager.getPoolForClient(oc), null);
+    }
 
     /**
      * Test to see if OdinMaster.handoff()
