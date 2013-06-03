@@ -742,6 +742,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				}
 			}
 			
+      br.close();
+
 		} catch (FileNotFoundException e1) {
 			log.error("Agent authentication list (config option poolFile) not supplied. Terminating.");
 			System.exit(1);
@@ -783,6 +785,9 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
 				clientManager.addClient(hwAddress, ipaddr, lvap);
 				lvap.setOFMessageList(lvapManager.getDefaultOFModList(ipaddr));
 			}
+
+      br.close();
+
 		} catch (FileNotFoundException e) {
 			// skip
 		} catch (IOException e) {
@@ -805,6 +810,8 @@ public class OdinMaster implements IFloodlightModule, IOFSwitchListener, IOdinAp
             port = Integer.parseInt(portNum);
         }
         
+        IThreadPoolService tp = context.getServiceImpl(IThreadPoolService.class);
+        executor = tp.getScheduledExecutor();
         // Spawn threads for different services
         executor.execute(new OdinAgentProtocolServer(this, port, executor));
         
