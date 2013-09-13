@@ -42,11 +42,13 @@ class OdinAgent implements IOdinAgent {
 	// OdinAgent Handler strings
 	private static final String READ_HANDLER_TABLE = "table";
 	private static final String READ_HANDLER_RXSTATS = "rxstats";
+	private static final String READ_HANDLER_SPECTRAL_SCAN = "spectral_scan";
 	private static final String WRITE_HANDLER_ADD_VAP = "add_vap";
 	private static final String WRITE_HANDLER_SET_VAP = "set_vap";
 	private static final String WRITE_HANDLER_REMOVE_VAP = "remove_vap";
 	private static final String WRITE_HANDLER_SUBSCRIPTIONS = "subscriptions";
 	private static final String WRITE_HANDLER_SEND_PROBE_RESPONSE = "send_probe_response";
+	private static final String WRITE_HANDLER_SPECTRAL_SCAN = "spectral_scan";
 	private static final String ODIN_AGENT_ELEMENT = "odinagent";
 
 	private final int RX_STAT_NUM_PROPERTIES = 5;
@@ -390,8 +392,6 @@ class OdinAgent implements IOdinAgent {
 			sb.append(" ");
 			sb.append(ssid);
 		}
-		
-		
 
 		invokeWriteHandler(WRITE_HANDLER_SEND_PROBE_RESPONSE, sb.toString());
 	}
